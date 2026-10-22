@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FUSOR — Unir, dividir y organizar PDF</title>
+  <meta name="description" content="Une, divide y organiza archivos PDF directamente en tu navegador. Nada se sube a un servidor." />
+  <meta name="theme-color" content="#f4f5f7" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='12' cy='16' r='9' fill='%23ff48b0'/%3E%3Ccircle cx='20' cy='16' r='9' fill='%233255a4' style='mix-blend-mode:multiply'/%3E%3C/svg%3E" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/motion.css">
+</head>
+<body data-tool="merge">
+
+  <!-- Iconos (un solo trazo, 1.75) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-merge" viewBox="0 0 24 24"><path d="M6 3v5a4 4 0 0 0 4 4h4a4 4 0 0 1 4 4v5"/><path d="M18 3v5a4 4 0 0 1-4 4"/><path d="m15 18 3 3 3-3"/></symbol>
+      <symbol id="i-split" viewBox="0 0 24 24"><path d="M12 21v-6a4 4 0 0 0-4-4H6"/><path d="M12 15a4 4 0 0 1 4-4h2"/><path d="M12 3v4"/><path d="m3 8 3 3-3 3"/><path d="m21 8-3 3 3 3"/></symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4 20h16"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+      <symbol id="i-up" viewBox="0 0 24 24"><path d="m6 14 6-6 6 6"/></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 10 6 6 6-6"/></symbol>
+      <symbol id="i-left" viewBox="0 0 24 24"><path d="m14 6-6 6 6 6"/></symbol>
+      <symbol id="i-right" viewBox="0 0 24 24"><path d="m10 6 6 6-6 6"/></symbol>
+      <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></symbol>
+      <symbol id="i-rotl" viewBox="0 0 24 24"><path d="M4 4v5h5"/><path d="M4.6 9A8 8 0 1 1 6 17"/></symbol>
+      <symbol id="i-rotr" viewBox="0 0 24 24"><path d="M20 4v5h-5"/><path d="M19.4 9A8 8 0 1 0 18 17"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4h6v3"/></symbol>
+      <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
+      <symbol id="i-sort" viewBox="0 0 24 24"><path d="M7 4v16"/><path d="m3 16 4 4 4-4"/><path d="M14 5h7M14 10h5M14 15h3"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5"/></symbol>
+    </defs>
+  </svg>
+
+  <header class="bar">
+    <a class="brand" href="#unir" aria-label="FUSOR, inicio">
+      <svg class="brand__mark" viewBox="0 0 40 28" aria-hidden="true">
+        <circle cx="13" cy="14" r="11" fill="var(--pink)"/>
+        <circle cx="27" cy="14" r="11" fill="var(--blue)" style="mix-blend-mode:multiply"/>
+      </svg>
+      <span class="brand__name">FUSOR</span>
+    </a>
+
+    <nav class="tabs" role="tablist" aria-label="Herramientas">
+      <span class="tabs__ink" aria-hidden="true"></span>
+      <button class="tab" role="tab" id="tab-merge" aria-controls="tool-merge" data-tool="merge" data-hash="unir" aria-selected="true">
+        <svg class="icon"><use href="#i-merge"/></svg><span>Unir</span>
+      </button>
+      <button class="tab" role="tab" id="tab-split" aria-controls="tool-split" data-tool="split" data-hash="dividir" aria-selected="false" tabindex="-1">
+        <svg class="icon"><use href="#i-split"/></svg><span>Dividir</span>
+      </button>
+      <button class="tab" role="tab" id="tab-organize" aria-controls="tool-organize" data-tool="organize" data-hash="organizar" aria-selected="false" tabindex="-1">
+        <svg class="icon"><use href="#i-grid"/></svg><span>Organizar</span>
+      </button>
+    </nav>
+
+    <p class="bar__privacy">
+      <svg class="icon"><use href="#i-lock"/></svg>
+      <span>Nada sale de tu equipo</span>
+    </p>
+  </header>
+
+  <main class="workspace">
+
+    <!-- ============ UNIR ============ -->
+    <section class="tool" id="tool-merge" role="tabpanel" aria-labelledby="tab-merge">
+      <div class="work">
+        <div class="work__head">
+          <h1 class="work__title" data-text="Unir PDF">Unir PDF</h1>
+          <p class="work__lede">Junta varios PDF en un solo archivo. Arrástralos para cambiar el orden.</p>
+        </div>
+
+        <div class="drop" data-drop="merge" tabindex="0" role="button" aria-label="Elegir archivos PDF para unir">
+          <svg class="drop__art" viewBox="0 0 148 104" aria-hidden="true">
+            <g class="a"><rect x="22" y="10" width="62" height="84" rx="3" fill="var(--pink)"/></g>
+            <g class="b"><rect x="64" y="10" width="62" height="84" rx="3" fill="var(--blue)"/></g>
+          </svg>
+          <svg class="icon icon--lg"><use href="#i-upload"/></svg>
+          <p class="drop__title">Suelta tus PDF aquí</p>
+          <p class="drop__sub">o <span class="link">elige archivos</span> de tu equipo. Puedes añadir varios a la vez.</p>
+          <input type="file" accept="application/pdf,.pdf" multiple hidden />
+        </div>
+
+        <div class="list-head" data-merge-head hidden>
+          <p class="list-head__count" data-merge-count></p>
+          <div class="list-head__actions">
+            <button class="btn btn--quiet" type="button" data-merge-sort><svg class="icon"><use href="#i-sort"/></svg>Ordenar por nombre</button>
+            <button class="btn btn--quiet" type="button" data-merge-clear><svg class="icon"><use href="#i-x"/></svg>Vaciar</button>
+          </div>
+        </div>
+        <ol class="files" data-merge-list aria-label="Archivos a unir, en orden"></ol>
+      </div>
+
+      <aside class="side" aria-label="Opciones de unión">
+        <dl class="tally">
+          <div><dt>Archivos</dt><dd data-merge-t-files>0</dd></div>
+          <div><dt>Páginas</dt><dd data-merge-t-pages>0</dd></div>
+          <div><dt>Tamaño</dt><dd data-merge-t-size>0 KB</dd></div>
+        </dl>
+
+        <div class="field">
+          <label class="field__label" for="mergeName">Nombre del archivo</label>
+          <div class="field__control field__control--suffix">
+            <input id="mergeName" type="text" value="documento-unido" spellcheck="false" autocomplete="off" />
+            <span>.pdf</span>
+          </div>
+        </div>
+
+        <button class="btn btn--primary" type="button" data-merge-go disabled>
+          <svg class="icon"><use href="#i-merge"/></svg><span data-merge-go-label>Unir PDF</span>
+        </button>
+        <p class="side__hint" data-merge-hint>Añade al menos 2 PDF para unirlos.</p>
+
+        <div class="result" data-merge-result hidden>
+          <p class="result__title">Listo</p>
+          <p class="result__meta" data-merge-result-meta></p>
+          <a class="btn btn--ink" data-merge-download href="#" download><svg class="icon"><use href="#i-download"/></svg>Descargar de nuevo</a>
+        </div>
+      </aside>
+    </section>
+
+    <!-- ============ DIVIDIR ============ -->
+    <section class="tool" id="tool-split" role="tabpanel" aria-labelledby="tab-split" hidden>
+      <div class="work">
+        <div class="work__head">
+          <h1 class="work__title" data-text="Dividir PDF">Dividir PDF</h1>
+          <p class="work__lede">Extrae las páginas que necesitas o separa un PDF en varios archivos.</p>
+        </div>
+
+        <div class="drop" data-drop="split" tabindex="0" role="button" aria-label="Elegir un archivo PDF para dividir">
+          <svg class="drop__art" viewBox="0 0 148 104" aria-hidden="true">
+            <g class="c"><path class="sheet" d="M43 10h31v84H43a3 3 0 0 1-3-3V13a3 3 0 0 1 3-3z" fill="var(--blue)"/></g>
+            <g class="d"><path class="sheet" d="M74 10h31a3 3 0 0 1 3 3v78a3 3 0 0 1-3 3H74z" fill="var(--blue)" opacity=".55"/></g>
+            <path class="ink-line" d="M74 4v96" stroke-dasharray="3 5"/>
+          </svg>
+          <svg class="icon icon--lg"><use href="#i-upload"/></svg>
+          <p class="drop__title">Suelta un PDF aquí</p>
+          <p class="drop__sub">o <span class="link">elige un archivo</span> de tu equipo.</p>
+          <input type="file" accept="application/pdf,.pdf" hidden />
+        </div>
+
+        <div class="doc-head" data-split-head hidden>
+          <svg class="icon"><use href="#i-file"/></svg>
+          <div class="doc-head__info">
+            <p class="doc-head__name" data-split-name></p>
+            <p class="doc-head__meta" data-split-meta></p>
+          </div>
+          <button class="btn btn--quiet" type="button" data-split-close><svg class="icon"><use href="#i-x"/></svg>Cambiar archivo</button>
+        </div>
+        <p class="grid-hint" data-split-gridhint hidden>Haz clic en las páginas para seleccionarlas. Mayús + clic selecciona un rango.</p>
+        <ul class="pages" data-split-pages aria-label="Páginas del documento"></ul>
+      </div>
+
+      <aside class="side" aria-label="Opciones de división">
+        <fieldset class="modes">
+          <legend class="field__label">Qué quieres hacer</legend>
+          <label class="mode">
+            <input type="radio" name="splitMode" value="extract" checked />
+            <span class="mode__body"><span class="mode__name">Extraer páginas</span><span class="mode__desc">Las páginas elegidas en un solo PDF.</span></span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="splitMode" value="each" />
+            <span class="mode__body"><span class="mode__name">Una por archivo</span><span class="mode__desc">Cada página elegida en su propio PDF.</span></span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="splitMode" value="chunks" />
+            <span class="mode__body"><span class="mode__name">Cada cierto número</span><span class="mode__desc">Cortar el documento en partes iguales.</span></span>
+          </label>
+        </fieldset>
+
+        <div class="field" data-split-range-field>
+          <label class="field__label" for="splitRange">Páginas</label>
+          <div class="field__control"><input id="splitRange" type="text" placeholder="Ej. 1-3, 5, 8-10" spellcheck="false" autocomplete="off" inputmode="numeric" /></div>
+          <p class="field__help" data-split-range-help>Vacío significa todas las páginas.</p>
+          <div class="chips">
+            <button class="chip" type="button" data-split-select="all">Todas</button>
+            <button class="chip" type="button" data-split-select="odd">Impares</button>
+            <button class="chip" type="button" data-split-select="even">Pares</button>
+            <button class="chip" type="button" data-split-select="none">Ninguna</button>
+          </div>
+        </div>
+
+        <div class="field" data-split-chunk-field hidden>
+          <label class="field__label" for="splitChunk">Páginas por archivo</label>
+          <div class="field__control field__control--suffix"><input id="splitChunk" type="number" min="1" value="2" inputmode="numeric" /><span>pág.</span></div>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="splitName">Nombre base</label>
+          <div class="field__control field__control--suffix">
+            <input id="splitName" type="text" value="documento" spellcheck="false" autocomplete="off" />
+            <span>.pdf</span>
+          </div>
+        </div>
+
+        <button class="btn btn--primary" type="button" data-split-go disabled>
+          <svg class="icon"><use href="#i-split"/></svg><span data-split-go-label>Dividir PDF</span>
+        </button>
+        <p class="side__hint" data-split-hint>Primero elige un PDF.</p>
+
+        <div class="result" data-split-result hidden>
+          <p class="result__title">Listo</p>
+          <p class="result__meta" data-split-result-meta></p>
+          <ul class="result__files" data-split-result-list></ul>
+          <button class="btn btn--ink" type="button" data-split-download-all hidden><svg class="icon"><use href="#i-download"/></svg>Descargar todos</button>
+        </div>
+      </aside>
+    </section>
+
+    <!-- ============ ORGANIZAR ============ -->
+    <section class="tool" id="tool-organize" role="tabpanel" aria-labelledby="tab-organize" hidden>
+      <div class="work">
+        <div class="work__head">
+          <h1 class="work__title" data-text="Organizar páginas">Organizar páginas</h1>
+          <p class="work__lede">Reordena, gira o quita páginas de un PDF antes de guardarlo.</p>
+        </div>
+
+        <div class="drop" data-drop="organize" tabindex="0" role="button" aria-label="Elegir un archivo PDF para organizar">
+          <svg class="drop__art" viewBox="0 0 148 104" aria-hidden="true">
+            <rect x="30" y="8" width="38" height="42" rx="2" fill="var(--yellow)"/>
+            <rect x="80" y="8" width="38" height="42" rx="2" fill="var(--yellow)"/>
+            <rect x="30" y="56" width="38" height="42" rx="2" fill="var(--yellow)"/>
+            <g class="r"><rect x="80" y="56" width="38" height="42" rx="2" fill="var(--pink)"/></g>
+          </svg>
+          <svg class="icon icon--lg"><use href="#i-upload"/></svg>
+          <p class="drop__title">Suelta un PDF aquí</p>
+          <p class="drop__sub">o <span class="link">elige un archivo</span> de tu equipo.</p>
+          <input type="file" accept="application/pdf,.pdf" hidden />
+        </div>
+
+        <div class="doc-head" data-org-head hidden>
+          <svg class="icon"><use href="#i-file"/></svg>
+          <div class="doc-head__info">
+            <p class="doc-head__name" data-org-name></p>
+            <p class="doc-head__meta" data-org-meta></p>
+          </div>
+          <button class="btn btn--quiet" type="button" data-org-close><svg class="icon"><use href="#i-x"/></svg>Cambiar archivo</button>
+        </div>
+        <p class="grid-hint" data-org-gridhint hidden>Arrastra las páginas para moverlas. Con el teclado, usa los botones de cada página.</p>
+        <ul class="pages pages--organize" data-org-pages aria-label="Páginas del documento, en orden"></ul>
+      </div>
+
+      <aside class="side" aria-label="Opciones de organización">
+        <dl class="tally">
+          <div><dt>Páginas finales</dt><dd data-org-t-final>0</dd></div>
+          <div><dt>Giradas</dt><dd data-org-t-rot>0</dd></div>
+          <div><dt>Quitadas</dt><dd data-org-t-del>0</dd></div>
+        </dl>
+
+        <div class="side__row">
+          <button class="btn btn--quiet" type="button" data-org-rotall="-90"><svg class="icon"><use href="#i-rotl"/></svg>Girar todas</button>
+          <button class="btn btn--quiet" type="button" data-org-reset><svg class="icon"><use href="#i-undo"/></svg>Restablecer</button>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="orgName">Nombre del archivo</label>
+          <div class="field__control field__control--suffix">
+            <input id="orgName" type="text" value="documento-organizado" spellcheck="false" autocomplete="off" />
+            <span>.pdf</span>
+          </div>
+        </div>
+
+        <button class="btn btn--primary" type="button" data-org-go disabled>
+          <svg class="icon"><use href="#i-download"/></svg><span data-org-go-label>Guardar PDF</span>
+        </button>
+        <p class="side__hint" data-org-hint>Primero elige un PDF.</p>
+
+        <div class="result" data-org-result hidden>
+          <p class="result__title">Listo</p>
+          <p class="result__meta" data-org-result-meta></p>
+          <a class="btn btn--ink" data-org-download href="#" download><svg class="icon"><use href="#i-download"/></svg>Descargar de nuevo</a>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>Todo el proceso ocurre en tu navegador: tus archivos nunca se suben a un servidor.</p>
+  </footer>
+
+  <div class="toasts" data-toasts aria-live="polite" aria-atomic="false"></div>
+  <div class="press" data-press aria-hidden="true"></div>
+
+  <!-- pdf-lib: leer y crear PDF (local) -->
+  <script src="js/vendor/pdf-lib.min.js"></script>
+  <!-- pdf.js: miniaturas de páginas (opcional; sin conexión se muestran números) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <script src="js/core/utils.js"></script>
+  <script src="js/core/engine.js"></script>
+  <script src="js/core/motion.js"></script>
+  <script src="js/core/ui.js"></script>
+  <script src="js/tools/merge.js"></script>
+  <script src="js/tools/split.js"></script>
+  <script src="js/tools/organize.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

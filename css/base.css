@@ -1,0 +1,44 @@
+*,*::before,*::after{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+  margin:0;
+  min-height:100vh;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--font);
+  font-size:var(--fs-md);
+  line-height:1.5;
+  font-variant-numeric:tabular-nums;
+  -webkit-font-smoothing:antialiased;
+  display:flex;
+  flex-direction:column;
+}
+h1,h2,h3,p{margin:0;}
+button,input{font:inherit;color:inherit;}
+button{cursor:pointer;}
+[hidden]{display:none !important;}
+
+::selection{background:var(--tool);color:var(--tool-on);}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:2px;}
+input{caret-color:var(--tool-text);}
+
+/* barras de desplazamiento en el tono del papel */
+*{scrollbar-width:thin;scrollbar-color:var(--rule-strong) transparent;}
+*::-webkit-scrollbar{width:10px;height:10px;}
+*::-webkit-scrollbar-thumb{background:var(--rule-strong);border-radius:10px;border:3px solid var(--paper);}
+*::-webkit-scrollbar-track{background:transparent;}
+
+.icon{
+  width:18px;height:18px;flex-shrink:0;
+  fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;
+}
+.icon--lg{width:28px;height:28px;}
+
+.visually-hidden{
+  position:absolute !important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
+
+@media (prefers-reduced-motion: reduce){
+  /* sin desplazamientos largos; los cambios de estado se mantienen (ver motion.css) */
+  *,*::before,*::after{scroll-behavior:auto !important;}
+}
