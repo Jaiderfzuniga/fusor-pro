@@ -6,12 +6,12 @@
   <title>FUSOR — Unir, dividir y organizar PDF</title>
   <meta name="description" content="Une, divide y organiza archivos PDF directamente en tu navegador. Nada se sube a un servidor." />
   <meta name="theme-color" content="#f4f5f7" />
+  <!-- Seguridad: solo se carga código del propio sitio; nada se envía a otros servidores. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self' data:; img-src 'self' data: blob:; worker-src 'self' blob:; connect-src 'self' blob: data:; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests" />
+  <meta name="referrer" content="no-referrer" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='12' cy='16' r='9' fill='%23ff48b0'/%3E%3Ccircle cx='20' cy='16' r='9' fill='%233255a4' style='mix-blend-mode:multiply'/%3E%3C/svg%3E" />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
-
+  <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css">
@@ -21,7 +21,7 @@
 <body data-tool="merge">
 
   <!-- Iconos (un solo trazo, 1.75) -->
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <svg class="sprite" width="0" height="0" aria-hidden="true">
     <defs>
       <symbol id="i-merge" viewBox="0 0 24 24"><path d="M6 3v5a4 4 0 0 0 4 4h4a4 4 0 0 1 4 4v5"/><path d="M18 3v5a4 4 0 0 1-4 4"/><path d="m15 18 3 3 3-3"/></symbol>
       <symbol id="i-split" viewBox="0 0 24 24"><path d="M12 21v-6a4 4 0 0 0-4-4H6"/><path d="M12 15a4 4 0 0 1 4-4h2"/><path d="M12 3v4"/><path d="m3 8 3 3-3 3"/><path d="m21 8-3 3 3 3"/></symbol>
@@ -48,7 +48,7 @@
     <a class="brand" href="#unir" aria-label="FUSOR, inicio">
       <svg class="brand__mark" viewBox="0 0 40 28" aria-hidden="true">
         <circle cx="13" cy="14" r="11" fill="var(--pink)"/>
-        <circle cx="27" cy="14" r="11" fill="var(--blue)" style="mix-blend-mode:multiply"/>
+        <circle class="brand__overprint" cx="27" cy="14" r="11" fill="var(--blue)"/>
       </svg>
       <span class="brand__name">FUSOR</span>
     </a>
@@ -295,8 +295,8 @@
 
   <!-- pdf-lib: leer y crear PDF (local) -->
   <script src="js/vendor/pdf-lib.min.js"></script>
-  <!-- pdf.js: miniaturas de páginas (opcional; sin conexión se muestran números) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- pdf.js 4 (local): miniaturas de páginas; si no carga se muestran números -->
+  <script type="module" src="js/core/pdfjs-loader.mjs"></script>
 
   <script src="js/core/utils.js"></script>
   <script src="js/core/engine.js"></script>

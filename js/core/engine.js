@@ -4,18 +4,34 @@
   "use strict";
 
   var PDFLib = window.PDFLib;
-  var pdfjs = window.pdfjsLib || null;
-  if(pdfjs){
-    pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  }
+  var MAX_BYTES = 200 * 1024 * 1024; // más que esto suele colgar la pestaña en un celular
+
+  // pdf.js llega como módulo (js/core/pdfjs-loader.mjs), después de este script.
+  var pdfjsReady = new Promise(function(resolve){
+    if(window.pdfjsLib) return resolve(window.pdfjsLib);
+    window.addEventListener('fusor:pdfjs-ready', function(){ resolve(window.pdfjsLib); }, { once: true });
+    setTimeout(function(){ resolve(window.pdfjsLib || null); }, 8000);
+  });
 
   function ReadError(code, message){
     this.code = code; this.message = message;
   }
 
+  // Un PDF empieza con "%PDF-" en su primer kilobyte.
+  function looksLikePdf(bytes){
+    var head = bytes.subarray(0, 1024);
+    for(var i = 0; i < head.length - 4; i++){
+      if(head[i] === 0x25 && head[i+1] === 0x50 && head[i+2] === 0x44 && head[i+3] === 0x46 && head[i+4] === 0x2d) return true;
+    }
+    return false;
+  }
+
   // Lee un archivo y devuelve sus bytes, número de páginas, giros y proporciones.
   async function open(file){
+    if(file.size > MAX_BYTES) throw new ReadError('too-big', 'Es demasiado grande (máximo 200 MB).');
+    if(file.size === 0) throw new ReadError('empty', 'El archivo está vacío.');
     var bytes = new Uint8Array(await file.arrayBuffer());
+    if(!looksLikePdf(bytes)) throw new ReadError('not-pdf', 'No es un PDF válido.');
     var doc;
     try{
       doc = await PDFLib.PDFDocument.load(bytes);
@@ -39,22 +55,38 @@
   }
 
   // ---------- miniaturas ----------
-  var thumbsOn = !!pdfjs;
   var renderQueue = Promise.resolve();
 
   function pdfjsDoc(entry){
-    if(!thumbsOn) return Promise.resolve(null);
     if(!entry._pdfjs){
-      // pdf.js se queda con el buffer; le damos una copia.
-      entry._pdfjs = pdfjs.getDocument({ data: entry.bytes.slice(0), isEvalSupported: false }).promise
-        .catch(function(){ return null; });
+      entry._pdfjs = pdfjsReady.then(function(pdfjs){
+        if(!pdfjs) return null;
+        // pdf.js se queda con el buffer; le damos una copia.
+        // Sin eval ni scripts del PDF: cierra la vía de ataque de CVE-2024-4367.
+        return pdfjs.getDocument({
+          data: entry.bytes.slice(0),
+          isEvalSupported: false,
+          enableXfa: false,
+          disableFontFace: false,
+          stopAtErrors: false
+        }).promise;
+      }).catch(function(){ return null; });
     }
     return entry._pdfjs;
   }
 
   // Dibuja una página en un canvas de ancho cssWidth. Devuelve null si no hay pdf.js.
+  // Ninguna miniatura puede bloquear la cola más de 10 s.
+  function withTimeout(p, ms){
+    return Promise.race([p, new Promise(function(r){ setTimeout(function(){ r(null); }, ms); })]);
+  }
+
   function renderThumb(entry, index, cssWidth){
-    var job = renderQueue.then(async function(){
+    var job = renderQueue.then(function(){ return withTimeout(draw(), 10000); }).catch(function(){ return null; });
+    renderQueue = job;
+    return job;
+
+    async function draw(){
       var doc = await pdfjsDoc(entry);
       if(!doc) return null;
       var page = await doc.getPage(index + 1);
@@ -68,9 +100,7 @@
       await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
       page.cleanup();
       return canvas;
-    }).catch(function(){ return null; });
-    renderQueue = job;
-    return job;
+    }
   }
 
   // Pinta miniaturas solo cuando entran en pantalla.
@@ -84,7 +114,6 @@
   }, { rootMargin: '300px 0px' }) : null;
 
   function lazyThumb(holder, entry, index, cssWidth){
-    if(!thumbsOn) return;
     holder._paint = function(){
       renderThumb(entry, index, cssWidth).then(function(canvas){
         if(!canvas || !holder.isConnected) return;
@@ -136,7 +165,6 @@
 
   F.engine = {
     open: open, merge: merge, build: build,
-    lazyThumb: lazyThumb, release: release,
-    get thumbsAvailable(){ return thumbsOn; }
+    lazyThumb: lazyThumb, release: release
   };
 })(window.Fusor);

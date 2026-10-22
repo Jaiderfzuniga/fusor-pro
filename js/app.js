@@ -4,7 +4,7 @@
 
   if(!window.PDFLib){
     document.body.insertAdjacentHTML('afterbegin',
-      '<p style="padding:16px;background:#fde7ea;color:#c8102e;font-weight:600">No se pudo cargar pdf-lib (js/vendor/pdf-lib.min.js). Revisa que la carpeta esté completa.</p>');
+      '<p class="fatal">No se pudo cargar pdf-lib (js/vendor/pdf-lib.min.js). Revisa que la carpeta esté completa.</p>');
     return;
   }
 

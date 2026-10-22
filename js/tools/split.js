@@ -63,13 +63,15 @@
         li.className = 'page page--pick';
         li.dataset.index = i;
         li.innerHTML =
-          '<div class="page__sheet" role="checkbox" tabindex="0" aria-checked="false" aria-label="Página ' + (i + 1) + '" style="--ratio:' + (doc.ratios[i] || 0.7071) + '">' +
+          '<div class="page__sheet" role="checkbox" tabindex="0" aria-checked="false" aria-label="Página ' + (i + 1) + '">' +
             '<span class="page__check" aria-hidden="true"><svg class="icon"><path d="m5 12 5 5 9-10"/></svg></span>' +
             '<span class="page__num-ghost" aria-hidden="true">' + (i + 1) + '</span>' +
           '</div>' +
           '<div class="page__foot"><span class="page__label">Página ' + (i + 1) + '</span></div>';
+        var sheet = li.querySelector('.page__sheet');
+        sheet.style.setProperty('--ratio', doc.ratios[i] || 0.7071);
         grid.appendChild(li);
-        E.lazyThumb(li.querySelector('.page__sheet'), doc, i, THUMB_W);
+        E.lazyThumb(sheet, doc, i, THUMB_W);
       }
     }
 

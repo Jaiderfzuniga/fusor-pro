@@ -81,7 +81,7 @@
         li.innerHTML =
           '<span class="file__grip" aria-hidden="true">' + U.icon('grip') + '</span>' +
           '<span class="file__index">' + (i + 1) + '</span>' +
-          '<span class="file__thumb"><span class="file__thumb-ink" style="--swatch:' + en.swatch + '"></span></span>' +
+          '<span class="file__thumb"><span class="file__thumb-ink"></span></span>' +
           '<span class="file__info"><span class="file__name" title="' + U.escapeHtml(en.name) + '">' + U.escapeHtml(en.name) + '</span>' +
           '<span class="file__meta">' + U.escapeHtml(meta) + '</span></span>' +
           '<span class="file__actions">' +
@@ -89,6 +89,7 @@
             '<button class="icon-btn" type="button" data-act="down" aria-label="Bajar ' + U.escapeHtml(en.name) + '"' + (i === queue.length - 1 ? ' disabled' : '') + '>' + U.icon('down') + '</button>' +
             '<button class="icon-btn icon-btn--danger" type="button" data-act="remove" aria-label="Quitar ' + U.escapeHtml(en.name) + '">' + U.icon('x') + '</button>' +
           '</span>';
+        li.querySelector('.file__thumb-ink').style.setProperty('--swatch', en.swatch);
         var thumb = li.querySelector('.file__thumb');
         if(oldThumbs[en.id]){ thumb.replaceWith(oldThumbs[en.id]); }
         else if(en.bytes){ E.lazyThumb(thumb, en, 0, 44); }
