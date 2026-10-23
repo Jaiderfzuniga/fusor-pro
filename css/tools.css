@@ -20,6 +20,7 @@
 }
 .field__control select option{color:#1c1f2b;background:#fff;}
 .btn--stamp{width:40px;padding:7px 0;}
+.btn--danger:hover:not(:disabled){border-color:var(--danger);color:var(--danger);background:var(--danger-wash);}
 .btn--stamp .icon{width:18px;height:18px;stroke-width:2.25;}
 
 /* ---------- Imágenes a PDF: miniaturas giradas ---------- */

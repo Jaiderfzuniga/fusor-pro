@@ -63,6 +63,13 @@
 
     $('[data-ph-rotate]').addEventListener('click', function(){ if(!st.bitmap) return; st.rotate = (st.rotate + 90) % 360; prepare(); });
     $('[data-ph-change]').addEventListener('click', function(){ drop.querySelector('input[type=file]').click(); });
+    $('[data-ph-remove]').addEventListener('click', function(){
+      if(busy) return;
+      if(st.bitmap && st.bitmap.close) st.bitmap.close();
+      st.bitmap = st.work = st.crop = null; st.rotate = 0;
+      paint(); schedule();
+      drop.focus();
+    });
 
     // ---------- composición ----------
     // La foto recortada a los mm pedidos y la resolución dada.
@@ -174,10 +181,10 @@
           blob = U.pdfBlob(await pdf.save()); name = base + '.pdf';
           meta = U.plural(spots.length, 'copia', 'copias') + ' en hoja Carta';
         }else if(fmt === 'sheet-jpg'){
-          blob = new Blob([await IM.jpegBytes(sheetCanvas(200), 0.9)], { type: 'image/jpeg' });
+          blob = new Blob([await IM.jpegBytes(sheetCanvas(200), 0.9, 200)], { type: 'image/jpeg' });
           name = base + '.jpg'; meta = U.plural(grid().spots.length, 'copia', 'copias') + ' en hoja Carta';
         }else{
-          blob = new Blob([await IM.jpegBytes(photo(DPI), 0.92)], { type: 'image/jpeg' });
+          blob = new Blob([await IM.jpegBytes(photo(DPI), 0.92, DPI)], { type: 'image/jpeg' });
           name = base + '.jpg'; meta = 'foto de ' + size().label;
         }
         if(lastUrl) URL.revokeObjectURL(lastUrl);

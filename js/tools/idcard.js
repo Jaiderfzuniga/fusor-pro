@@ -197,8 +197,8 @@
         if(fmt === 'jpg' || fmt === 'png'){
           var c = pageCanvas(L, 200);
           blob = fmt === 'jpg'
-            ? new Blob([await IM.jpegBytes(c, 0.9)], { type: 'image/jpeg' })
-            : await new Promise(function(r){ c.toBlob(r, 'image/png'); });
+            ? new Blob([await IM.jpegBytes(c, 0.9, 200)], { type: 'image/jpeg' })
+            : new Blob([await IM.pngBytes(c, 200)], { type: 'image/png' });
           name = base + '.' + fmt;
         }else{
           var pdf = await PDFLib.PDFDocument.create();
