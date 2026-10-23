@@ -1,4 +1,4 @@
-# FUSOR — Unir, dividir, organizar y firmar PDF
+# FUSOR — Herramientas PDF en tu navegador
 
 Herramienta web para trabajar con PDF directamente en el navegador. Ningún archivo se sube a un servidor.
 
@@ -11,13 +11,22 @@ Herramienta web para trabajar con PDF directamente en el navegador. Ningún arch
 | **Organizar** | Miniaturas de cada página para reordenar, girar o quitar páginas. Las páginas quitadas quedan marcadas y se pueden recuperar hasta guardar. |
 | **Firmar** | Acepta PDF, Word (.docx), imágenes (JPG, PNG, WEBP, GIF, BMP) y texto (.txt, .md, .csv). Crea tu firma dibujándola, escribiéndola o subiendo una foto; arrástrala a la página, muévela, cambia su tamaño o cópiala en todas las páginas. También agrega texto y la fecha. Descarga en PDF, Word, PNG o JPG. |
 
-Cada herramienta tiene su propia URL: `#unir`, `#dividir`, `#organizar`, `#firmar`.
+| **Comprimir** | Reduce el peso de un PDF. *Recomendada* y *Fuerte* convierten cada página en imagen (mucho menos peso, el texto deja de ser seleccionable); *Ligera* conserva todo. Opción en blanco y negro. Nunca entrega un archivo más pesado que el original. |
+| **Imágenes a PDF** | Junta varias fotos en un PDF (una por página): reordena, gira, elige Carta, A4, Oficio o el tamaño de la foto, y el margen. Reduce el peso de las fotos del celular. |
+| **Ampliar documento** | Fotos del frente y reverso de la cédula (o tarjeta, licencia, pasaporte): detecta el documento en la foto, se ajusta el recorte, se limpia (color mejorado, grises o fotocopia) y queda en una hoja Carta, Oficio o A4 a tamaño real ampliado al 100 %, 150 % o 200 %. PDF o JPG. |
+
+Cada herramienta tiene su propia URL: `#unir`, `#dividir`, `#organizar`, `#firmar`, `#comprimir`, `#imagenes`, `#ampliar`.
+
+La página sigue el modo claro u oscuro del sistema; las hojas de los documentos se ven siempre blancas.
 
 ### Firmar: detalles
 
 - **Word y otros formatos** se convierten a PDF en el navegador antes de firmar (párrafos, negrita/cursiva, tamaños, colores, listas, tablas, imágenes y saltos de página). Los `.doc` antiguos, `.odt` y `.rtf` no se pueden leer: guárdalos como `.docx` o PDF. Las fuentes del Word se aproximan con Helvetica, Times o Courier.
 - **Firmas:** se dibujan con ratón, dedo o lápiz (sigue la presión), se escriben con tres estilos manuscritos o se suben como foto (quita el fondo blanco). Se guardan solo en el navegador (`localStorage`) y se pueden borrar.
 - **Colocar:** arrastra la firma desde el panel hasta la página, o toca una página y luego la firma. Con teclado: flechas para mover (Mayús = más rápido), `+`/`-` para el tamaño, Suprimir para quitar.
+- **Formularios PDF:** si el PDF tiene campos (texto, casillas, listas), aparecen arriba para rellenarlos. Al descargar se aplanan (quedan impresos) salvo que se marque «Dejar el formulario editable».
+- **Sellos e iniciales:** ✓, ✗ e iniciales manuscritas, que se colocan y mueven como las firmas.
+- **Deshacer:** Ctrl+Z / Ctrl+Y (Cmd en Mac) o los botones junto al nombre del documento.
 - **Descargar:** PDF (las firmas se integran en el documento original, respetando páginas giradas); Word (`.docx` con cada página como imagen, idéntico al original); PNG o JPG (una imagen por página; con varias páginas, en un `.zip`).
 
 ## Estructura del proyecto
@@ -32,7 +41,8 @@ fusor-pro/
 │   ├── base.css            → estilos base, iconos, foco, selección
 │   ├── layout.css          → barra superior, área de trabajo, panel lateral, móvil
 │   ├── components.css      → botones, zona para soltar, listas, páginas, avisos
-│   └── sign.css            → Firmar: páginas, firmas colocadas, estudio de firma
+│   ├── sign.css            → Firmar: páginas, firmas colocadas, estudio de firma
+│   └── tools.css           → Comprimir, Imágenes, Ampliar, formularios y modo oscuro
 ├── js/
 │   ├── core/
 │   │   ├── utils.js        → utilidades (rangos de páginas, nombres, tamaños)
@@ -42,12 +52,16 @@ fusor-pro/
 │   │   ├── ui.js           → zona para soltar, avisos, animación de unión
 │   │   ├── convert.js      → Word, imágenes y texto → PDF
 │   │   ├── export.js       → PDF → Word, PNG, JPG (.zip)
-│   │   └── signpad.js      → estudio de firma y firmas guardadas
+│   │   ├── signpad.js      → estudio de firma y firmas guardadas
+│   │   └── imaging.js      → fotos: orientación, giro, reducción y limpieza
 │   ├── tools/
 │   │   ├── merge.js        → Unir
 │   │   ├── split.js        → Dividir
 │   │   ├── organize.js     → Organizar
-│   │   └── sign.js         → Firmar
+│   │   ├── sign.js         → Firmar
+│   │   ├── compress.js     → Comprimir
+│   │   ├── images.js       → Imágenes a PDF
+│   │   └── idcard.js       → Ampliar documento
 │   ├── app.js              → pestañas y navegación por #hash
 │   └── vendor/
 │       ├── pdf-lib.min.js  → librería para leer y crear PDF

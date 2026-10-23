@@ -210,7 +210,7 @@
     var text = $('#studioText').value.trim();
     if(!text) return null;
     var size = 140;
-    var c = document.createElement('canvas'), ctx = c.getContext('2d');
+    var c = document.createElement('canvas'), ctx = c.getContext('2d', { willReadFrequently: true });
     ctx.font = size + 'px "' + typedFont + '"';
     var w = Math.ceil(ctx.measureText(text).width + size);
     c.width = Math.min(w, 4000); c.height = Math.round(size * 1.8);
@@ -235,7 +235,7 @@
     var max = 1600, s = Math.min(1, max / Math.max(upload.width, upload.height));
     var c = document.createElement('canvas');
     c.width = Math.max(1, Math.round(upload.width * s)); c.height = Math.max(1, Math.round(upload.height * s));
-    var ctx = c.getContext('2d');
+    var ctx = c.getContext('2d', { willReadFrequently: true });
     ctx.drawImage(upload, 0, 0, c.width, c.height);
     if($('#studioKeyBg').checked){
       // el papel claro se vuelve transparente y el trazo toma el color elegido
@@ -295,7 +295,7 @@
       var r = pad.getBoundingClientRect(), k = 3;
       canvas = document.createElement('canvas');
       canvas.width = Math.round(r.width * k); canvas.height = Math.round(r.height * k);
-      var ctx = canvas.getContext('2d');
+      var ctx = canvas.getContext('2d', { willReadFrequently: true });
       strokes.forEach(function(s){ strokeOn(ctx, s, k); });
     }else if(mode === 'type'){
       if(document.fonts) await document.fonts.load('140px "' + typedFont + '"', $('#studioText').value);
@@ -337,7 +337,7 @@
     opts = opts || {};
     var size = 72;
     var font = (opts.weight || 600) + ' ' + size + 'px ' + (opts.family || 'Archivo, system-ui, sans-serif');
-    var c = document.createElement('canvas'), ctx = c.getContext('2d');
+    var c = document.createElement('canvas'), ctx = c.getContext('2d', { willReadFrequently: true });
     ctx.font = font;
     c.width = Math.min(Math.ceil(ctx.measureText(text).width + 24), 6000);
     c.height = Math.round(size * 1.4);

@@ -1,0 +1,108 @@
+/* Comprimir, Imágenes a PDF, Ampliar documento, formularios de Firmar y
+   ajustes del modo oscuro. */
+
+/* ---------- piezas compartidas ---------- */
+.tally--2{grid-template-columns:repeat(2,1fr);}
+.modes--3{grid-template-columns:repeat(3, minmax(0,1fr));}
+/* opciones cortas: botones segmentados, el radio queda oculto pero accesible */
+.modes--3 .mode{position:relative;justify-content:center;padding:var(--s-2) var(--s-1);}
+.modes--3 .mode input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;}
+.modes--3 .mode__name{white-space:nowrap;}
+.modes--3 .mode:has(input:checked) .mode__name{color:var(--tool-text);}
+.modes--3 .mode:has(input:focus-visible){outline:2px solid var(--ink);outline-offset:2px;}
+.modes--grid .mode:not(:has(.mode__desc)){align-items:center;}
+.modes--grid .mode:not(:has(.mode__desc)) input{margin-top:0;}
+.field__control--grow{flex:1;min-width:90px;}
+.field__control select,.field__control textarea{
+  flex:1;min-width:0;border:none;background:none;outline:none;
+  padding:10px var(--s-3);font:inherit;font-size:var(--fs-md);color:inherit;resize:vertical;
+}
+.field__control select option{color:#1c1f2b;background:#fff;}
+.btn--stamp{width:40px;padding:7px 0;}
+.btn--stamp .icon{width:18px;height:18px;stroke-width:2.25;}
+
+/* ---------- Imágenes a PDF: miniaturas giradas ---------- */
+.page__sheet img.img-rot{
+  width:100%;height:100%;object-fit:contain;
+  transform:rotate(var(--rot, 0deg)) scale(var(--fit, 1));
+}
+
+/* ---------- Firmar: formulario del PDF ---------- */
+.form-box{
+  margin-bottom:var(--s-5);
+  padding:var(--s-3) var(--s-4) var(--s-4);
+  background:var(--sheet);border:1px solid var(--rule);border-radius:var(--radius-lg);
+}
+.form-box[open]{display:flex;flex-direction:column;gap:var(--s-3);}
+.form-box__head{display:flex;align-items:center;justify-content:space-between;gap:var(--s-2);cursor:pointer;list-style:none;}
+.form-box__head::-webkit-details-marker{display:none;}
+.form-box__head::after{content:'';width:8px;height:8px;border-right:2px solid var(--ink-3);border-bottom:2px solid var(--ink-3);transform:rotate(45deg);margin-left:var(--s-2);transition:transform .2s var(--ease-out);}
+.form-box[open] .form-box__head::after{transform:rotate(-135deg);}
+.form-box__title{font-weight:700;}
+.form-box__count{margin-left:auto;font-size:var(--fs-sm);color:var(--tool-text);font-weight:700;}
+.form-box__fields{display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:var(--s-3) var(--s-4);}
+.form-field{display:flex;flex-direction:column;gap:6px;min-width:0;}
+.form-field--check{justify-content:flex-end;}
+
+/* ---------- Ampliar documento ---------- */
+.id-slots{display:grid;grid-template-columns:repeat(2, minmax(0,1fr));gap:var(--s-5);margin-bottom:var(--s-6);}
+.id-slot{display:flex;flex-direction:column;gap:var(--s-2);min-width:0;}
+.id-slot__title{font-weight:700;}
+.id-slot__opt{font-weight:500;color:var(--ink-3);}
+.drop--slot{min-height:190px;padding:var(--s-6) var(--s-4);}
+.drop--slot > .icon--lg{display:block !important;}
+.drop--slot .drop__title{font-size:var(--fs-lg);}
+
+.crop{border-radius:var(--radius);overflow:hidden;background:var(--paper-3);}
+.crop__stage{position:relative;width:100%;aspect-ratio:var(--ratio, 1.5);max-height:420px;margin:0 auto;}
+.crop__stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+.crop__box{
+  position:absolute;
+  left:calc(var(--x) * 100%);top:calc(var(--y) * 100%);
+  width:calc(var(--w) * 100%);height:calc(var(--h) * 100%);
+  border:2px solid var(--tool);border-radius:3px;
+  box-shadow:0 0 0 9999px rgba(20,22,31,.55);
+  cursor:move;touch-action:none;
+}
+.crop__box:focus-visible{outline:2px solid #fff;outline-offset:2px;}
+.crop__box::before,.crop__box::after{content:'';position:absolute;pointer-events:none;border:0 solid rgba(255,255,255,.45);}
+.crop__box::before{left:33.3%;right:33.3%;top:0;bottom:0;border-left-width:1px;border-right-width:1px;}
+.crop__box::after{top:33.3%;bottom:33.3%;left:0;right:0;border-top-width:1px;border-bottom-width:1px;}
+.crop__h{position:absolute;width:18px;height:18px;background:#fff;border:2px solid var(--tool);border-radius:50%;z-index:1;}
+.crop__h::after{content:'';position:absolute;inset:-12px;}
+.crop__h[data-h="nw"]{left:-10px;top:-10px;cursor:nwse-resize;}
+.crop__h[data-h="ne"]{right:-10px;top:-10px;cursor:nesw-resize;}
+.crop__h[data-h="sw"]{left:-10px;bottom:-10px;cursor:nesw-resize;}
+.crop__h[data-h="se"]{right:-10px;bottom:-10px;cursor:nwse-resize;}
+
+.id-preview{
+  width:min(100%, 420px);
+  aspect-ratio:var(--ratio, 0.773);
+  background:var(--page);
+  border-radius:3px;
+  box-shadow:var(--shadow-sheet);
+  overflow:hidden;
+}
+.id-preview canvas{display:block;width:100%;height:100%;}
+.id-preview__note{margin-top:var(--s-2);font-size:var(--fs-sm);color:var(--ink-2);font-weight:600;}
+
+@media (max-width:820px){
+  .id-slots{grid-template-columns:minmax(0,1fr);}
+  .form-box__fields{grid-template-columns:minmax(0,1fr);}
+}
+
+/* ---------- modo oscuro: lo que debe seguir siendo papel ---------- */
+@media (prefers-color-scheme: dark){
+  .page__sheet,.sign-page__sheet,.studio__padwrap,.studio__typed,.studio__pad,.sig__pick{background-color:var(--page);}
+  .page__num-ghost{color:#c9ccd6;}
+  .sig__pick{background-image:linear-gradient(#cfd3dc, #cfd3dc);}
+  .studio__typed.is-empty{color:#c9ccd6;}
+  .studio__padhint{color:#62677b;}
+  .studio__line{background:#a9aebb;}
+  /* sobre fondo oscuro las tintas se suman en lugar de multiplicarse */
+  .work__title::before,.work__title::after,.drop__art rect,.drop__art path.sheet,.brand__overprint,.drop::before,.file__thumb-ink{mix-blend-mode:screen;}
+  .drop__art .ink-line,.drop__art .sig-stroke{stroke:var(--ink);}
+  .btn--ink:hover{background:#ffffff;}
+  .tabs__ink::after{opacity:.2;mix-blend-mode:overlay;}
+  input,select,textarea{color-scheme:dark;}
+}
