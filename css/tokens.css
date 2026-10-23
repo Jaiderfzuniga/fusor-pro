@@ -24,6 +24,7 @@
   --orange:#ff4800;   /* rosa × amarillo */
   --green:#325500;    /* azul × amarillo */
   --teal:#00838a;
+  --red:#f15060;
 
   /* hoja de un documento: siempre blanca, también en modo oscuro */
   --page:#ffffff;
@@ -90,6 +91,11 @@ body[data-tool="idcard"]{
   --ink-a:var(--teal); --ink-b:var(--pink);
 }
 
+body[data-tool="photo"]{
+  --tool:var(--red); --tool-on:var(--ink); --tool-text:#c42a3c; --tool-wash:#fde4e7;
+  --ink-a:var(--red); --ink-b:var(--blue);
+}
+
 /* ---------- modo oscuro (js/core/theme.js pone data-theme en <html>) ---------- */
 :root[data-theme="dark"]{
   color-scheme:dark;
@@ -115,3 +121,4 @@ body[data-tool="idcard"]{
 [data-theme="dark"] body[data-tool="compress"]{ --tool-text:#ff8f63; --tool-wash:rgba(255,72,0,.16); }
 [data-theme="dark"] body[data-tool="images"]{ --tool:#4c7d12; --tool-text:#a6d470; --tool-wash:rgba(76,125,18,.25); }
 [data-theme="dark"] body[data-tool="idcard"]{ --tool-text:#4fcbd1; --tool-wash:rgba(0,131,138,.22); }
+[data-theme="dark"] body[data-tool="photo"]{ --tool-on:#14161f; --tool-text:#ff8a97; --tool-wash:rgba(241,80,96,.18); }

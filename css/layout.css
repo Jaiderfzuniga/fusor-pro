@@ -93,8 +93,8 @@ html.is-theming *,html.is-theming *::before,html.is-theming *::after{transition:
 
 
 /* ---------- adaptación ---------- */
-/* sin espacio para una sola fila: pestañas en cuadrícula de 4 + 3 debajo de la marca */
-@media (max-width:1180px){
+/* sin espacio para una sola fila: pestañas en cuadrícula de 4 por fila debajo de la marca */
+@media (max-width:1280px){
   :root{--bar-h:auto;}
   .bar{flex-wrap:wrap;height:auto;gap:var(--s-2) var(--s-4);padding:var(--s-3) var(--s-6) var(--s-2);}
   .theme-btn{margin-left:0;}

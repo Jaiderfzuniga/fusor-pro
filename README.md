@@ -13,9 +13,10 @@ Herramienta web para trabajar con PDF directamente en el navegador. Ningún arch
 
 | **Comprimir** | Reduce el peso de un PDF. *Recomendada* y *Fuerte* convierten cada página en imagen (mucho menos peso, el texto deja de ser seleccionable); *Ligera* conserva todo. Opción en blanco y negro. Nunca entrega un archivo más pesado que el original. |
 | **Imágenes a PDF** | Junta varias fotos en un PDF (una por página): reordena, gira, elige Carta, A4, Oficio o el tamaño de la foto, y el margen. Reduce el peso de las fotos del celular. |
-| **Ampliar documento** | Fotos del frente y reverso de la cédula (o tarjeta, licencia, pasaporte): detecta el documento en la foto, se ajusta el recorte, se limpia (color mejorado, grises o fotocopia) y queda en una hoja Carta, Oficio o A4 a tamaño real ampliado al 100 %, 150 % o 200 %. PDF o JPG. |
+| **Foto 3×4** | Una foto tuya recortada a 3 × 4 cm (o 2,5 × 3, 4 × 5, 5 × 5 cm) con un óvalo guía para la cara. Se descarga como foto JPG a 300 ppp o como hoja Carta con 1, 4, 8 copias (o llena) y guías de corte, en PDF o JPG. |
+| **Ampliar documento** | Fotos del frente y reverso de la cédula (o tarjeta, licencia, carné estudiantil horizontal o vertical, pasaporte u otro tamaño medido a mano): detecta el documento en la foto, se ajusta el recorte, se limpia (color mejorado, grises o fotocopia) y queda en una hoja Carta, Oficio o A4 a tamaño real ampliado al 100 %, 150 % o 200 %. PDF o JPG. |
 
-Cada herramienta tiene su propia URL: `#unir`, `#dividir`, `#organizar`, `#firmar`, `#comprimir`, `#imagenes`, `#ampliar`.
+Cada herramienta tiene su propia URL: `#unir`, `#dividir`, `#organizar`, `#firmar`, `#comprimir`, `#imagenes`, `#ampliar`, `#foto`.
 
 Modo claro u oscuro: el botón junto al logo (luna / sol) cambia el tema y lo recuerda en el navegador; mientras no se use, sigue la configuración del sistema. Las hojas de los documentos se ven siempre blancas. En pantallas angostas las pestañas se ordenan en 4 arriba y 3 abajo.
 
@@ -54,7 +55,8 @@ fusor-pro/
 │   │   ├── convert.js      → Word, imágenes y texto → PDF
 │   │   ├── export.js       → PDF → Word, PNG, JPG (.zip)
 │   │   ├── signpad.js      → estudio de firma y firmas guardadas
-│   │   └── imaging.js      → fotos: orientación, giro, reducción y limpieza
+│   │   ├── imaging.js      → fotos: orientación, giro, reducción y limpieza
+│   │   └── cropper.js      → recorte con proporción fija y detección del documento
 │   ├── tools/
 │   │   ├── merge.js        → Unir
 │   │   ├── split.js        → Dividir
@@ -62,12 +64,15 @@ fusor-pro/
 │   │   ├── sign.js         → Firmar
 │   │   ├── compress.js     → Comprimir
 │   │   ├── images.js       → Imágenes a PDF
-│   │   └── idcard.js       → Ampliar documento
+│   │   ├── idcard.js       → Ampliar documento
+│   │   └── photo.js        → Foto para documentos (3×4)
 │   ├── app.js              → pestañas y navegación por #hash
 │   └── vendor/
 │       ├── pdf-lib.min.js  → librería para leer y crear PDF
 │       ├── fflate.min.js   → leer .docx y crear .zip / .docx (fflate 0.8.2)
 │       └── pdfjs/          → pdf.js 4.10.38 para las miniaturas
+├── tests/                  → pruebas automáticas (ver tests/LEEME.md)
+├── package.json            → solo para las pruebas; la página no necesita instalar nada
 ├── PRODUCT.md              → para quién es y qué debe cumplir
 └── README.md
 ```
@@ -85,6 +90,10 @@ python -m http.server 8000
 Luego abre `http://localhost:8000`.
 
 **Opción C — directo:** doble clic en `index.html`.
+
+## Pruebas automáticas
+
+Antes de publicar un cambio, `npm test` abre la página en un navegador y prueba cada herramienta (ver `tests/LEEME.md`). En GitHub se corren solas en cada pull request.
 
 ## Cómo publicarlo gratis
 
