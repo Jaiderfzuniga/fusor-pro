@@ -44,10 +44,7 @@
           if(s.bitmap && s.bitmap.close) s.bitmap.close();
           s.bitmap = bmp; s.rotate = 0;
           prepare(s, true);
-          // el documento quedó girado respecto a su forma (de pie o acostado): se endereza
-          // (si queda al revés, «Girar»)
-          var box = CR.detect(s.work);
-          if(box && (box.h > box.w * 1.15) !== (aspect() < 1)){ s.rotate = 90; prepare(s, true); }
+          orient(s);
         }catch(err){ UI.toast(f.name + ': ' + err.message, 'error'); }
       });
       el.querySelector('[data-id-rotate]').addEventListener('click', function(){ if(!s.bitmap) return; s.rotate = (s.rotate + 90) % 360; prepare(s, true); });
@@ -78,6 +75,16 @@
       s.work = IM.draw(s.bitmap, s.rotate, WORK_MAX);
       if(resetCrop || !s.crop){ var box = CR.detect(s.work); s.crop = box ? CR.around(s.work, box, aspect()) : CR.initial(s.work, aspect()); }
       paintSlot(s); schedule();
+    }
+
+    // Si el documento está de pie y se eligió uno acostado (o al revés), se gira
+    // la foto 90° para enderezarlo. Si queda al revés, «Girar». Devuelve si giró.
+    function orient(s){
+      var box = CR.detect(s.work);
+      if(!box || (box.h > box.w * 1.15) === (aspect() < 1)) return false;
+      s.rotate = (s.rotate + 90) % 360;
+      prepare(s, true);
+      return true;
     }
 
     function paintSlot(s){
@@ -173,7 +180,7 @@
       customField.hidden = opt('idDoc') !== 'custom';
       slots.back.el.hidden = docSize().sides === 1;
       [slots.front, slots.back].forEach(function(s){
-        if(!s.work) return;
+        if(!s.work || orient(s)) return;
         var box = CR.detect(s.work);
         s.crop = box ? CR.around(s.work, box, aspect()) : CR.fit(s.crop, s.work, aspect());
         paintSlot(s);

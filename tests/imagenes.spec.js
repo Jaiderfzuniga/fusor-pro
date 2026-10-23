@@ -79,6 +79,9 @@ test('Ampliar: carné vertical, otro tamaño y aviso cuando no cabe', async ({ p
   await page.check('input[name=idDoc][value=cardV]');
   await expect(page.locator('[data-id-preview-note]')).toContainText('8,1 × 12,8 cm'); // de pie, al 150 %
   await expect(page.locator('[data-id-slot="back"]')).toBeHidden();
+  // la foto ya subida (tarjeta acostada) se gira para que el carné quede de pie
+  const lienzo = page.locator('[data-id-slot="front"] .crop__stage canvas');
+  await expect.poll(() => lienzo.evaluate(c => c.height > c.width)).toBe(true);
 
   await page.check('input[name=idDoc][value=custom]');
   await expect(page.locator('[data-id-custom]')).toBeVisible();
