@@ -15,6 +15,7 @@
   F.tools.merge.init(document.getElementById('tool-merge'));
   F.tools.split.init(document.getElementById('tool-split'));
   F.tools.organize.init(document.getElementById('tool-organize'));
+  F.tools.sign.init(document.getElementById('tool-sign'));
 
   var ink = document.querySelector('.tabs__ink');
   var current = null;
@@ -28,7 +29,7 @@
       document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
     });
     document.body.dataset.tool = tab.dataset.tool;
-    document.title = 'FUSOR — ' + tab.textContent.trim() + ' PDF';
+    document.title = 'FUSOR — ' + tab.textContent.trim() + (tab.dataset.tool === 'sign' ? ' documentos' : ' PDF');
     F.motion.slideInk(ink, tab, current === null);
     if(changed){
       var panel = document.getElementById(tab.getAttribute('aria-controls'));
