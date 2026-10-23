@@ -100,16 +100,6 @@ Antes de publicar un cambio, `npm test` abre la página en un navegador y prueba
 - **GitHub Pages:** sube la carpeta a un repositorio → *Settings → Pages* → rama `main`, carpeta raíz.
 - **Netlify:** arrastra la carpeta completa a [app.netlify.com/drop](https://app.netlify.com/drop).
 
-## Seguridad
-
-- **Sin dependencias externas:** pdf-lib, fflate, [pdf.js](https://mozilla.github.io/pdf.js/) 4.10.38 (`js/vendor/pdfjs/`) y las tipografías (`fonts/`) están dentro del proyecto. La página no carga nada de otros servidores.
-- **Política CSP** en `index.html`: solo se ejecuta código del propio sitio; sin scripts ni estilos en línea, sin `eval` y sin conexiones a otros dominios.
-- **pdf.js endurecido:** versión corregida contra CVE-2024-4367, con `isEvalSupported: false` y sin XFA.
-- **Validación de archivos:** se rechazan los que no empiezan como PDF (`%PDF-`), los vacíos, los de más de 200 MB y los protegidos con contraseña.
-- **Sin referrer:** al salir de la página no se envía la dirección de origen.
-
-Si agregas código, no uses atributos `style="…"` ni `<script>` en línea: la CSP los bloquea. Usa clases CSS o `element.style.setProperty()`.
-
 ## Notas técnicas
 
 - Las miniaturas se cargan como módulo ES (`js/core/pdfjs-loader.mjs`). Al abrir `index.html` con doble clic el navegador bloquea los módulos, así que aparecen números en lugar de miniaturas; con un servidor local o publicada, se ven bien.
