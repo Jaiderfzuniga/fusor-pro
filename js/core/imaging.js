@@ -37,13 +37,63 @@
     return c;
   }
 
-  function jpegBytes(canvas, quality){
+  function canvasBytes(canvas, type, quality){
     return new Promise(function(resolve, reject){
       canvas.toBlob(function(b){
         if(!b) return reject(new Error('No se pudo crear la imagen'));
         b.arrayBuffer().then(function(buf){ resolve(new Uint8Array(buf)); }, reject);
-      }, 'image/jpeg', quality || 0.86);
+      }, type, quality);
     });
+  }
+
+  // JPG del lienzo. Con dpi, el archivo guarda su resolución: así una foto de
+  // 3 × 4 cm se imprime a 3 × 4 cm (sin ella, Word o Windows suponen 72–96 ppp).
+  async function jpegBytes(canvas, quality, dpi){
+    var b = await canvasBytes(canvas, 'image/jpeg', quality || 0.86);
+    return dpi ? jpegDpi(b, dpi) : b;
+  }
+
+  async function pngBytes(canvas, dpi){
+    var b = await canvasBytes(canvas, 'image/png');
+    return dpi ? pngDpi(b, dpi) : b;
+  }
+
+  // Densidad en el encabezado JFIF (unidades: puntos por pulgada).
+  function jpegDpi(b, dpi){
+    var hi = (dpi >> 8) & 255, lo = dpi & 255;
+    if(b[2] === 0xff && b[3] === 0xe0 && b[6] === 0x4a && b[7] === 0x46 && b[8] === 0x49 && b[9] === 0x46){
+      b[13] = 1; b[14] = hi; b[15] = lo; b[16] = hi; b[17] = lo;
+      return b;
+    }
+    var app0 = new Uint8Array([0xff, 0xe0, 0, 16, 0x4a, 0x46, 0x49, 0x46, 0, 1, 1, 1, hi, lo, hi, lo, 0, 0]);
+    var out = new Uint8Array(b.length + app0.length);
+    out.set(b.subarray(0, 2)); out.set(app0, 2); out.set(b.subarray(2), 2 + app0.length);
+    return out;
+  }
+
+  // Bloque pHYs (puntos por metro) justo después de IHDR.
+  function pngDpi(b, dpi){
+    var ppm = Math.round(dpi / 0.0254);
+    var chunk = new Uint8Array(21), v = new DataView(chunk.buffer);
+    v.setUint32(0, 9);
+    chunk.set([0x70, 0x48, 0x59, 0x73], 4); // «pHYs»
+    v.setUint32(8, ppm); v.setUint32(12, ppm); chunk[16] = 1;
+    v.setUint32(17, crc32(chunk.subarray(4, 17)));
+    var at = 8 + 25; // firma + IHDR
+    var out = new Uint8Array(b.length + chunk.length);
+    out.set(b.subarray(0, at)); out.set(chunk, at); out.set(b.subarray(at), at + chunk.length);
+    return out;
+  }
+
+  var CRC = null;
+  function crc32(bytes){
+    if(!CRC){
+      CRC = new Uint32Array(256);
+      for(var n = 0; n < 256; n++){ var c = n; for(var k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; CRC[n] = c >>> 0; }
+    }
+    var r = 0xffffffff;
+    for(var i = 0; i < bytes.length; i++) r = CRC[(r ^ bytes[i]) & 255] ^ (r >>> 8);
+    return (r ^ 0xffffffff) >>> 0;
   }
 
   // Niveles automáticos: el 1 % más oscuro pasa a negro y el 1 % más claro a blanco.
@@ -87,5 +137,5 @@
     return canvas;
   }
 
-  F.imaging = { isImage: isImage, load: load, draw: draw, jpegBytes: jpegBytes, clean: clean };
+  F.imaging = { isImage: isImage, load: load, draw: draw, jpegBytes: jpegBytes, pngBytes: pngBytes, clean: clean };
 })(window.Fusor);

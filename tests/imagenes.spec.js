@@ -4,6 +4,13 @@ const { abrir, descargar, imagen, leerPdf, archivo, esJpg, esZip, fflate, PDFLib
 
 const MM = 72 / 25.4;
 
+// Resolución guardada en el archivo (null si no tiene).
+function dpiJpg(b){ return b[6] === 0x4a && b[13] === 1 ? b.readUInt16BE(14) : null; }
+function dpiPng(b){
+  const i = b.indexOf('pHYs');
+  return i < 0 || b[i + 12] !== 1 ? null : Math.round(b.readUInt32BE(i + 4) * 0.0254);
+}
+
 test('Imágenes a PDF: una página por foto, en orden y con giro', async ({ page }) => {
   const errores = await abrir(page, 'imagenes');
   const fotos = [
@@ -72,6 +79,9 @@ test('Ampliar: carné vertical, otro tamaño y aviso cuando no cabe', async ({ p
   await page.check('input[name=idDoc][value=cardV]');
   await expect(page.locator('[data-id-preview-note]')).toContainText('8,1 × 12,8 cm'); // de pie, al 150 %
   await expect(page.locator('[data-id-slot="back"]')).toBeHidden();
+  // la foto ya subida (tarjeta acostada) se gira para que el carné quede de pie
+  const lienzo = page.locator('[data-id-slot="front"] .crop__stage canvas');
+  await expect.poll(() => lienzo.evaluate(c => c.height > c.width)).toBe(true);
 
   await page.check('input[name=idDoc][value=custom]');
   await expect(page.locator('[data-id-custom]')).toBeVisible();
@@ -87,9 +97,11 @@ test('Ampliar: carné vertical, otro tamaño y aviso cuando no cabe', async ({ p
   await page.check('input[name=idFormat][value=jpg]');
   let r = await descargar(page, '[data-id-go]');
   expect(r.nombre).toMatch(/\.jpg$/); expect(esJpg(r.bytes)).toBe(true);
+  expect(dpiJpg(r.bytes)).toBe(200);
   await page.check('input[name=idFormat][value=png]');
   r = await descargar(page, '[data-id-go]');
   expect(r.nombre).toMatch(/\.png$/); expect(r.bytes.subarray(1, 4).toString()).toBe('PNG');
+  expect(dpiPng(r.bytes)).toBe(200);
   await page.check('input[name=idFormat][value=docx]');
   r = await descargar(page, '[data-id-go]');
   expect(r.nombre).toMatch(/\.docx$/); expect(esZip(r.bytes)).toBe(true);
@@ -133,6 +145,8 @@ test('Foto 3×4: foto suelta en JPG a 300 ppp y hoja de copias en PDF', async ({
     return [bmp.width, bmp.height];
   }, Array.from(r.bytes));
   expect(px).toEqual([354, 472]);
+  // el archivo guarda 300 ppp, así se imprime a 3 × 4 cm y no más grande
+  expect(dpiJpg(r.bytes)).toBe(300);
 
   // hoja Carta con 8 copias
   await page.check('input[name=phFormat][value=pdf]');
@@ -146,5 +160,25 @@ test('Foto 3×4: foto suelta en JPG a 300 ppp y hoja de copias en PDF', async ({
   await page.check('input[name=phSize][value="4x5"]');
   await page.check('input[name=phCopies][value=fill]');
   await expect(page.locator('[data-ph-preview-note]')).toContainText('copias de 4 × 5 cm');
+
+  // la hoja en JPG guarda 200 ppp: se imprime en tamaño Carta
+  await page.check('input[name=phFormat][value=sheet-jpg]');
+  r = await descargar(page, '[data-ph-go]');
+  expect(dpiJpg(r.bytes)).toBe(200);
   expect(errores).toEqual([]);
+});
+
+test('Foto 3×4: «Eliminar foto» quita la imagen y vuelve a pedir una', async ({ page }) => {
+  await abrir(page, 'foto');
+  await page.setInputFiles('#tool-photo [data-drop] input[type=file]', archivo('yo.jpg', 'image/jpeg', await imagen(page, { ancho: 900, alto: 1200, dibujo: 'retrato' })));
+  await expect(page.locator('[data-ph-crop]')).toBeVisible();
+  await expect(page.locator('[data-ph-go]')).toBeEnabled();
+  await page.click('[data-ph-remove]');
+  await expect(page.locator('[data-ph-crop]')).toBeHidden();
+  await expect(page.locator('#tool-photo [data-drop]')).toBeVisible();
+  await expect(page.locator('[data-ph-go]')).toBeDisabled();
+  // se puede subir otra
+  await page.setInputFiles('#tool-photo [data-drop] input[type=file]', archivo('otra.jpg', 'image/jpeg', await imagen(page, { ancho: 800, alto: 1000, dibujo: 'retrato' })));
+  await expect(page.locator('[data-ph-crop]')).toBeVisible();
+  await expect(page.locator('[data-ph-go]')).toBeEnabled();
 });

@@ -1,6 +1,6 @@
 // Firmar: crear una firma, colocarla, formularios, sellos, deshacer y formatos.
 const { test, expect } = require('@playwright/test');
-const { abrir, descargar, pdf, docx, leerPdf, archivo, esZip, PDFLib } = require('./ayudas');
+const { abrir, descargar, pdf, docx, leerPdf, archivo, esZip, PDFLib, fflate } = require('./ayudas');
 
 async function crearFirmaEscrita(page, nombre){
   await page.click('[data-sign-create]');
@@ -71,6 +71,13 @@ test('Word se convierte a PDF y se descarga firmado en Word, PNG y JPG', async (
   await page.check('input[name=signFormat][value=png]');
   r = await descargar(page, '[data-sign-go]');
   expect(r.nombre).toMatch(/\.zip$/); expect(esZip(r.bytes)).toBe(true); // 2 páginas → .zip
+  // cada imagen guarda 144 ppp: impresa, mide lo mismo que la página original
+  const pngs = fflate.unzipSync(new Uint8Array(r.bytes));
+  expect(Object.keys(pngs)).toHaveLength(2);
+  for(const b of Object.values(pngs)){
+    const buf = Buffer.from(b), i = buf.indexOf('pHYs');
+    expect(Math.round(buf.readUInt32BE(i + 4) * 0.0254)).toBe(144);
+  }
   await page.check('input[name=signFormat][value=jpg]');
   r = await descargar(page, '[data-sign-go]');
   expect(r.nombre).toMatch(/\.zip$/);

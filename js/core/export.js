@@ -12,15 +12,6 @@
     jpg:  { ext: 'jpg',  label: 'JPG' }
   };
 
-  function canvasBytes(canvas, type, quality){
-    return new Promise(function(resolve, reject){
-      canvas.toBlob(function(b){
-        if(!b) return reject(new Error('No se pudo crear la imagen'));
-        b.arrayBuffer().then(function(buf){ resolve(new Uint8Array(buf)); }, reject);
-      }, type, quality);
-    });
-  }
-
   // Dibuja cada página del PDF. onPage(i, total) informa el avance.
   async function pages(pdfBytes, type, onPage){
     var entry = { bytes: pdfBytes };
@@ -31,7 +22,10 @@
         if(onPage) onPage(i, count);
         var canvas = await E.rasterize(entry, i, SCALE);
         if(!canvas) throw new Error('Para exportar a imagen o Word abre FUSOR desde un servidor o la versión publicada (no con doble clic)');
-        out.push({ width: canvas.width, height: canvas.height, bytes: await canvasBytes(canvas, type, 0.92) });
+        // la imagen guarda su resolución para imprimirse al tamaño de la página original
+        var IM = F.imaging, dpi = Math.round(72 * SCALE);
+        var bytes = type === 'image/png' ? await IM.pngBytes(canvas, dpi) : await IM.jpegBytes(canvas, 0.92, dpi);
+        out.push({ width: canvas.width, height: canvas.height, bytes: bytes });
         canvas.width = canvas.height = 0; // libera memoria en celulares
       }
       return out;
