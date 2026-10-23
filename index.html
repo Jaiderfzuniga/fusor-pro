@@ -648,11 +648,15 @@
           <legend class="field__label">Documento</legend>
           <label class="mode">
             <input type="radio" name="idDoc" value="card" checked />
-            <span class="mode__body"><span class="mode__name">Cédula o tarjeta</span><span class="mode__desc">Cédula, tarjeta de identidad, licencia, carné estudiantil (8,6 × 5,4 cm)</span></span>
+            <span class="mode__body"><span class="mode__name">Cédula o tarjeta</span><span class="mode__desc">Cédula, tarjeta de identidad, licencia. Frente y reverso (8,6 × 5,4 cm)</span></span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="idDoc" value="student" />
+            <span class="mode__body"><span class="mode__name">Carné estudiantil</span><span class="mode__desc">Horizontal, solo el frente (8,6 × 5,4 cm)</span></span>
           </label>
           <label class="mode">
             <input type="radio" name="idDoc" value="cardV" />
-            <span class="mode__body"><span class="mode__name">Carné vertical</span><span class="mode__desc">Carné estudiantil o de empresa de pie (5,4 × 8,6 cm)</span></span>
+            <span class="mode__body"><span class="mode__name">Carné vertical</span><span class="mode__desc">De pie, solo el frente (5,4 × 8,6 cm)</span></span>
           </label>
           <label class="mode">
             <input type="radio" name="idDoc" value="passport" />
@@ -695,8 +699,10 @@
 
         <fieldset class="modes modes--grid">
           <legend class="field__label">Descargar como</legend>
-          <label class="mode"><input type="radio" name="idFormat" value="pdf" checked /><span class="mode__body"><span class="mode__name">PDF</span></span></label>
-          <label class="mode"><input type="radio" name="idFormat" value="jpg" /><span class="mode__body"><span class="mode__name">JPG</span></span></label>
+          <label class="mode"><input type="radio" name="idFormat" value="pdf" checked /><span class="mode__body"><span class="mode__name">PDF</span><span class="mode__desc">Recomendado</span></span></label>
+          <label class="mode"><input type="radio" name="idFormat" value="docx" /><span class="mode__body"><span class="mode__name">Word</span><span class="mode__desc">.docx</span></span></label>
+          <label class="mode"><input type="radio" name="idFormat" value="png" /><span class="mode__body"><span class="mode__name">PNG</span><span class="mode__desc">Imagen nítida</span></span></label>
+          <label class="mode"><input type="radio" name="idFormat" value="jpg" /><span class="mode__body"><span class="mode__name">JPG</span><span class="mode__desc">Imagen liviana</span></span></label>
         </fieldset>
 
         <div class="field">

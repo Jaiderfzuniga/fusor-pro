@@ -1,6 +1,6 @@
 // Imágenes a PDF, Ampliar documento y Foto para documentos.
 const { test, expect } = require('@playwright/test');
-const { abrir, descargar, imagen, leerPdf, archivo, esJpg } = require('./ayudas');
+const { abrir, descargar, imagen, leerPdf, archivo, esJpg, esZip, fflate, PDFLib } = require('./ayudas');
 
 const MM = 72 / 25.4;
 
@@ -71,6 +71,7 @@ test('Ampliar: carné vertical, otro tamaño y aviso cuando no cabe', async ({ p
 
   await page.check('input[name=idDoc][value=cardV]');
   await expect(page.locator('[data-id-preview-note]')).toContainText('8,1 × 12,8 cm'); // de pie, al 150 %
+  await expect(page.locator('[data-id-slot="back"]')).toBeHidden();
 
   await page.check('input[name=idDoc][value=custom]');
   await expect(page.locator('[data-id-custom]')).toBeVisible();
@@ -82,9 +83,41 @@ test('Ampliar: carné vertical, otro tamaño y aviso cuando no cabe', async ({ p
   await page.check('input[name=idScale][value="200"]');
   await expect(page.locator('[data-id-hint]')).toContainText('No cabe al 200 %');
 
+  // la misma hoja en los otros formatos
   await page.check('input[name=idFormat][value=jpg]');
-  const { nombre, bytes } = await descargar(page, '[data-id-go]');
-  expect(nombre).toMatch(/\.jpg$/); expect(esJpg(bytes)).toBe(true);
+  let r = await descargar(page, '[data-id-go]');
+  expect(r.nombre).toMatch(/\.jpg$/); expect(esJpg(r.bytes)).toBe(true);
+  await page.check('input[name=idFormat][value=png]');
+  r = await descargar(page, '[data-id-go]');
+  expect(r.nombre).toMatch(/\.png$/); expect(r.bytes.subarray(1, 4).toString()).toBe('PNG');
+  await page.check('input[name=idFormat][value=docx]');
+  r = await descargar(page, '[data-id-go]');
+  expect(r.nombre).toMatch(/\.docx$/); expect(esZip(r.bytes)).toBe(true);
+  const word = fflate.unzipSync(new Uint8Array(r.bytes));
+  expect(Object.keys(word)).toContain('word/document.xml');
+  expect(Object.keys(word).some(k => k.startsWith('word/media/'))).toBe(true);
+});
+
+test('Ampliar: el carné estudiantil lleva solo el frente', async ({ page }) => {
+  const errores = await abrir(page, 'ampliar');
+  const reverso = page.locator('[data-id-slot="back"]');
+  await expect(reverso).toBeVisible(); // la cédula pide frente y reverso
+  const foto = await imagen(page, { ancho: 1600, alto: 1200, dibujo: 'documento' });
+  await page.setInputFiles('[data-id-slot="front"] input[type=file]', archivo('frente.jpg', 'image/jpeg', foto));
+  await page.setInputFiles('[data-id-slot="back"] input[type=file]', archivo('reverso.jpg', 'image/jpeg', foto));
+
+  for(const tipo of ['student', 'cardV']){
+    await page.check('input[name=idDoc][value=' + tipo + ']');
+    await expect(reverso).toBeHidden();
+    const { bytes } = await descargar(page, '[data-id-go]');
+    // una sola imagen en la hoja aunque antes se hubiera subido el reverso
+    const doc = await leerPdf(bytes);
+    const xobj = doc.getPage(0).node.Resources().lookup(PDFLib.PDFName.of('XObject'));
+    expect(xobj.keys().length).toBe(1);
+  }
+  await page.check('input[name=idDoc][value=card]');
+  await expect(reverso).toBeVisible();
+  expect(errores).toEqual([]);
 });
 
 test('Foto 3×4: foto suelta en JPG a 300 ppp y hoja de copias en PDF', async ({ page }) => {

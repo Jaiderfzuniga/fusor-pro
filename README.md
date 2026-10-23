@@ -14,7 +14,7 @@ Herramienta web para trabajar con PDF directamente en el navegador. Ningún arch
 | **Comprimir** | Reduce el peso de un PDF. *Recomendada* y *Fuerte* convierten cada página en imagen (mucho menos peso, el texto deja de ser seleccionable); *Ligera* conserva todo. Opción en blanco y negro. Nunca entrega un archivo más pesado que el original. |
 | **Imágenes a PDF** | Junta varias fotos en un PDF (una por página): reordena, gira, elige Carta, A4, Oficio o el tamaño de la foto, y el margen. Reduce el peso de las fotos del celular. |
 | **Foto 3×4** | Una foto tuya recortada a 3 × 4 cm (o 2,5 × 3, 4 × 5, 5 × 5 cm) con un óvalo guía para la cara. Se descarga como foto JPG a 300 ppp o como hoja Carta con 1, 4, 8 copias (o llena) y guías de corte, en PDF o JPG. |
-| **Ampliar documento** | Fotos del frente y reverso de la cédula (o tarjeta, licencia, carné estudiantil horizontal o vertical, pasaporte u otro tamaño medido a mano): detecta el documento en la foto, se ajusta el recorte, se limpia (color mejorado, grises o fotocopia) y queda en una hoja Carta, Oficio o A4 a tamaño real ampliado al 100 %, 150 % o 200 %. PDF o JPG. |
+| **Ampliar documento** | Fotos del frente y reverso de la cédula (o tarjeta, licencia, pasaporte u otro tamaño medido a mano), o solo el frente del carné estudiantil (horizontal o vertical): detecta el documento en la foto, se ajusta el recorte, se limpia (color mejorado, grises o fotocopia) y queda en una hoja Carta, Oficio o A4 a tamaño real ampliado al 100 %, 150 % o 200 %. Se descarga en PDF, Word, PNG o JPG. |
 
 Cada herramienta tiene su propia URL: `#unir`, `#dividir`, `#organizar`, `#firmar`, `#comprimir`, `#imagenes`, `#ampliar`, `#foto`.
 
