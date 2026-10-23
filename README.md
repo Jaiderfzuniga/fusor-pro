@@ -49,7 +49,7 @@ fusor-pro/
 │   │   ├── theme.js        → modo claro u oscuro (se carga en <head>)
 │   │   ├── utils.js        → utilidades (rangos de páginas, nombres, tamaños)
 │   │   ├── engine.js       → leer, validar, unir y construir PDF; miniaturas
-│   │   ├── pdfjs-loader.mjs → carga pdf.js (módulo ES)
+│   │   ├── pdfjs-loader.js → prepara pdf.js (con doble clic, sin worker)
 │   │   ├── motion.js       → animaciones
 │   │   ├── ui.js           → zona para soltar, avisos, animación de unión
 │   │   ├── convert.js      → Word, imágenes y texto → PDF
@@ -102,7 +102,7 @@ Antes de publicar un cambio, `npm test` abre la página en un navegador y prueba
 
 ## Notas técnicas
 
-- Las miniaturas se cargan como módulo ES (`js/core/pdfjs-loader.mjs`). Al abrir `index.html` con doble clic el navegador bloquea los módulos, así que aparecen números en lugar de miniaturas; con un servidor local o publicada, se ven bien.
+- pdf.js va como script clásico (`js/vendor/pdfjs/*.min.js`, generados con `node scripts/pdfjs-clasico.js` desde el build «legacy» de pdfjs-dist). Así las páginas se ven también al abrir `index.html` con doble clic: como ahí Chrome no permite workers, pdf.js trabaja en la propia página (algo más lento). Publicada o con un servidor local usa un worker aparte.
 - Respeta `prefers-reduced-motion` y se puede usar entero con teclado.
 - Exportar a Word, PNG o JPG usa pdf.js, así que (como las miniaturas) necesita abrir la app desde un servidor o publicada.
 - Licencias: pdf.js (Apache 2.0, `js/vendor/pdfjs/LICENSE`), Archivo (SIL OFL, `fonts/OFL.txt`), Great Vibes, Dancing Script y Caveat (SIL OFL, `fonts/firma/`), pdf-lib (MIT), fflate (MIT, `js/vendor/fflate.LICENSE`).
