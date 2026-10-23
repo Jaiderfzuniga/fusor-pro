@@ -20,7 +20,7 @@ Todo el procesamiento ocurre localmente en el navegador: ningún archivo se sube
 
 ## Capabilities and Constraints
 
-- Herramientas: **Unir** varios PDF, **Dividir / extraer** páginas (por rangos o una por archivo), **Organizar** páginas (miniaturas, reordenar, rotar, eliminar), **Firmar** documentos (PDF, Word, imágenes o texto; crear, guardar y arrastrar firmas; rellenar formularios; sellos e iniciales; descargar en PDF, Word, PNG o JPG), **Comprimir** PDF, **Imágenes a PDF** y **Ampliar documento** (cédula o pasaporte al 100/150/200 % en una hoja).
+- Herramientas: **Unir** varios PDF, **Dividir / extraer** páginas (por rangos o una por archivo), **Organizar** páginas (miniaturas, reordenar, rotar, eliminar), **Firmar** documentos (PDF, Word, imágenes o texto; crear, guardar y arrastrar firmas; rellenar formularios; sellos e iniciales; descargar en PDF, Word, PNG o JPG), **Comprimir** PDF, **Imágenes a PDF**, **Ampliar documento** (cédula, carné, pasaporte u otro tamaño al 100/150/200 % en una hoja) y **Foto 3×4** (foto para documentos, suelta o en hoja de copias).
 - HTML, CSS y JS puros, sin build step ni backend. Publicable en GitHub Pages o Netlify.
 - pdf-lib y fflate incluidos localmente en `js/vendor/` para manipular PDF, leer Word y crear .zip/.docx.
 - Interfaz en español.

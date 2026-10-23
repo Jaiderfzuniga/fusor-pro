@@ -19,6 +19,7 @@
   F.tools.compress.init(document.getElementById('tool-compress'));
   F.tools.images.init(document.getElementById('tool-images'));
   F.tools.idcard.init(document.getElementById('tool-idcard'));
+  F.tools.photo.init(document.getElementById('tool-photo'));
 
   var ink = document.querySelector('.tabs__ink');
   var current = null;

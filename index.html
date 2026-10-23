@@ -57,6 +57,7 @@
       <symbol id="i-compress" viewBox="0 0 24 24"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="m9.5 9 2.5 2.5L14.5 9"/><path d="m9.5 17 2.5-2.5 2.5 2.5"/></symbol>
       <symbol id="i-photos" viewBox="0 0 24 24"><rect x="7.5" y="3.5" width="13" height="13" rx="2"/><path d="M16.5 20.5H6a2.5 2.5 0 0 1-2.5-2.5V7.5"/><circle cx="12" cy="8" r="1.5"/><path d="m20.5 13-3.5-3.5-6 6"/></symbol>
       <symbol id="i-idcard" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M5.5 16c.6-1.5 1.7-2.2 3-2.2s2.4.7 3 2.2"/><path d="M14.5 10h4M14.5 13.5h3"/></symbol>
+      <symbol id="i-portrait" viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M7.5 18.5c.8-2.2 2.5-3.3 4.5-3.3s3.7 1.1 4.5 3.3"/></symbol>
       <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
       <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M20 4v5h-5"/><path d="M19.4 9A8 8 0 1 0 18 17"/></symbol>
     </defs>
@@ -98,6 +99,9 @@
       </button>
       <button class="tab" role="tab" id="tab-idcard" aria-controls="tool-idcard" data-tool="idcard" data-hash="ampliar" aria-selected="false" tabindex="-1">
         <svg class="icon"><use href="#i-idcard"/></svg><span>Ampliar</span>
+      </button>
+      <button class="tab" role="tab" id="tab-photo" aria-controls="tool-photo" data-tool="photo" data-hash="foto" aria-selected="false" tabindex="-1">
+        <svg class="icon"><use href="#i-portrait"/></svg><span>Foto 3×4</span>
       </button>
     </nav>
   </header>
@@ -644,13 +648,28 @@
           <legend class="field__label">Documento</legend>
           <label class="mode">
             <input type="radio" name="idDoc" value="card" checked />
-            <span class="mode__body"><span class="mode__name">Cédula o tarjeta</span><span class="mode__desc">Cédula, tarjeta de identidad, licencia (8,6 × 5,4 cm)</span></span>
+            <span class="mode__body"><span class="mode__name">Cédula o tarjeta</span><span class="mode__desc">Cédula, tarjeta de identidad, licencia, carné estudiantil (8,6 × 5,4 cm)</span></span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="idDoc" value="cardV" />
+            <span class="mode__body"><span class="mode__name">Carné vertical</span><span class="mode__desc">Carné estudiantil o de empresa de pie (5,4 × 8,6 cm)</span></span>
           </label>
           <label class="mode">
             <input type="radio" name="idDoc" value="passport" />
             <span class="mode__body"><span class="mode__name">Pasaporte</span><span class="mode__desc">Página de datos (12,5 × 8,8 cm)</span></span>
           </label>
+          <label class="mode">
+            <input type="radio" name="idDoc" value="custom" />
+            <span class="mode__body"><span class="mode__name">Otro tamaño</span><span class="mode__desc">Mide tu documento con una regla</span></span>
+          </label>
         </fieldset>
+        <div class="field" data-id-custom hidden>
+          <p class="field__label">Medidas del documento</p>
+          <div class="side__row">
+            <div class="field__control field__control--suffix field__control--grow"><input id="idCustomW" type="text" inputmode="decimal" value="8,6" aria-label="Ancho en centímetros" /><span>cm ancho</span></div>
+            <div class="field__control field__control--suffix field__control--grow"><input id="idCustomH" type="text" inputmode="decimal" value="5,4" aria-label="Alto en centímetros" /><span>cm alto</span></div>
+          </div>
+        </div>
 
         <fieldset class="modes modes--grid modes--3">
           <legend class="field__label">Ampliación</legend>
@@ -683,7 +702,7 @@
         <div class="field">
           <label class="field__label" for="idName">Nombre del archivo</label>
           <div class="field__control field__control--suffix">
-            <input id="idName" type="text" value="cedula-ampliada" spellcheck="false" autocomplete="off" />
+            <input id="idName" type="text" value="documento-ampliado" spellcheck="false" autocomplete="off" />
             <span data-id-ext>.pdf</span>
           </div>
         </div>
@@ -697,6 +716,107 @@
           <p class="result__title">Listo</p>
           <p class="result__meta" data-id-result-meta></p>
           <a class="btn btn--ink" data-id-download href="#" download><svg class="icon"><use href="#i-download"/></svg>Descargar de nuevo</a>
+        </div>
+      </aside>
+    </section>
+
+    <!-- ============ FOTO PARA DOCUMENTOS ============ -->
+    <section class="tool" id="tool-photo" role="tabpanel" aria-labelledby="tab-photo" hidden>
+      <div class="work">
+        <div class="work__head">
+          <h1 class="work__title" data-text="Foto para documentos">Foto para documentos</h1>
+          <p class="work__lede">Sube una foto tuya y obtén la foto de 3 × 4 cm (u otro tamaño) lista para subir a un formulario o imprimir varias copias en una hoja.</p>
+        </div>
+
+        <div class="drop" data-drop="photo" tabindex="0" role="button" aria-label="Elegir una foto">
+          <svg class="drop__art" viewBox="0 0 148 104" aria-hidden="true">
+            <g class="a"><rect x="38" y="8" width="54" height="72" rx="3" fill="var(--red)" opacity=".55"/></g>
+            <g class="b"><rect x="58" y="22" width="54" height="72" rx="3" fill="var(--blue)"/></g>
+            <circle cx="85" cy="50" r="11" fill="var(--paper)"/>
+          </svg>
+          <svg class="icon icon--lg"><use href="#i-upload"/></svg>
+          <p class="drop__title">Suelta tu foto aquí</p>
+          <p class="drop__sub">o <span class="link">elige o toma una foto</span>: de frente, con fondo claro.</p>
+          <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" hidden />
+        </div>
+
+        <div class="photo-edit">
+          <div class="crop crop--photo" data-ph-crop hidden>
+            <div class="crop__stage">
+              <div class="crop__box" tabindex="0" role="group" aria-label="Recorte de la foto. Arrastra para moverlo, usa las esquinas para el tamaño. Con teclado: flechas y más o menos.">
+                <span class="crop__face" aria-hidden="true"></span>
+                <span class="crop__h" data-h="nw"></span><span class="crop__h" data-h="ne"></span><span class="crop__h" data-h="sw"></span><span class="crop__h" data-h="se"></span>
+              </div>
+            </div>
+          </div>
+          <div class="side__row" data-ph-actions hidden>
+            <button class="btn btn--quiet" type="button" data-ph-rotate><svg class="icon"><use href="#i-rotate"/></svg>Girar</button>
+            <button class="btn btn--quiet" type="button" data-ph-change><svg class="icon"><use href="#i-upload"/></svg>Cambiar foto</button>
+          </div>
+        </div>
+
+        <p class="grid-hint">Vista previa:</p>
+        <div class="id-preview" data-ph-preview></div>
+        <p class="id-preview__note" data-ph-preview-note></p>
+      </div>
+
+      <aside class="side" aria-label="Opciones de la foto">
+        <fieldset class="modes modes--grid">
+          <legend class="field__label">Tamaño</legend>
+          <label class="mode"><input type="radio" name="phSize" value="3x4" checked /><span class="mode__body"><span class="mode__name">3 × 4 cm</span><span class="mode__desc">Documentos</span></span></label>
+          <label class="mode"><input type="radio" name="phSize" value="25x3" /><span class="mode__body"><span class="mode__name">2,5 × 3 cm</span><span class="mode__desc">Carnés</span></span></label>
+          <label class="mode"><input type="radio" name="phSize" value="4x5" /><span class="mode__body"><span class="mode__name">4 × 5 cm</span><span class="mode__desc">Pasaporte</span></span></label>
+          <label class="mode"><input type="radio" name="phSize" value="5x5" /><span class="mode__body"><span class="mode__name">5 × 5 cm</span><span class="mode__desc">Visa EE. UU.</span></span></label>
+        </fieldset>
+
+        <fieldset class="modes modes--grid modes--3">
+          <legend class="field__label">Color</legend>
+          <label class="mode"><input type="radio" name="phClean" value="none" checked /><span class="mode__body"><span class="mode__name">Natural</span></span></label>
+          <label class="mode"><input type="radio" name="phClean" value="color" /><span class="mode__body"><span class="mode__name">Mejorado</span></span></label>
+          <label class="mode"><input type="radio" name="phClean" value="gray" /><span class="mode__body"><span class="mode__name">Grises</span></span></label>
+        </fieldset>
+
+        <fieldset class="modes">
+          <legend class="field__label">Descargar como</legend>
+          <label class="mode">
+            <input type="radio" name="phFormat" value="jpg" checked />
+            <span class="mode__body"><span class="mode__name">Foto (JPG)</span><span class="mode__desc">Para subir a un formulario o página web.</span></span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="phFormat" value="pdf" />
+            <span class="mode__body"><span class="mode__name">Hoja para imprimir (PDF)</span><span class="mode__desc">Varias copias en hoja Carta, con guías de corte.</span></span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="phFormat" value="sheet-jpg" />
+            <span class="mode__body"><span class="mode__name">Hoja para imprimir (JPG)</span><span class="mode__desc">Para imprimir en una tienda de fotos.</span></span>
+          </label>
+        </fieldset>
+
+        <fieldset class="modes modes--grid modes--4" data-ph-copies hidden>
+          <legend class="field__label">Copias</legend>
+          <label class="mode"><input type="radio" name="phCopies" value="1" /><span class="mode__body"><span class="mode__name">1</span></span></label>
+          <label class="mode"><input type="radio" name="phCopies" value="4" /><span class="mode__body"><span class="mode__name">4</span></span></label>
+          <label class="mode"><input type="radio" name="phCopies" value="8" checked /><span class="mode__body"><span class="mode__name">8</span></span></label>
+          <label class="mode"><input type="radio" name="phCopies" value="fill" /><span class="mode__body"><span class="mode__name">Llenar</span></span></label>
+        </fieldset>
+
+        <div class="field">
+          <label class="field__label" for="phName">Nombre del archivo</label>
+          <div class="field__control field__control--suffix">
+            <input id="phName" type="text" value="foto-3x4" spellcheck="false" autocomplete="off" />
+            <span data-ph-ext>.jpg</span>
+          </div>
+        </div>
+
+        <button class="btn btn--primary" type="button" data-ph-go disabled>
+          <svg class="icon"><use href="#i-portrait"/></svg><span data-ph-go-label>Descargar foto</span>
+        </button>
+        <p class="side__hint" data-ph-hint>Sube una foto de frente, con fondo claro.</p>
+
+        <div class="result" data-ph-result hidden>
+          <p class="result__title">Listo</p>
+          <p class="result__meta" data-ph-result-meta></p>
+          <a class="btn btn--ink" data-ph-download href="#" download><svg class="icon"><use href="#i-download"/></svg>Descargar de nuevo</a>
         </div>
       </aside>
     </section>
@@ -797,6 +917,7 @@
   <script src="js/core/export.js"></script>
   <script src="js/core/signpad.js"></script>
   <script src="js/core/imaging.js"></script>
+  <script src="js/core/cropper.js"></script>
   <script src="js/tools/merge.js"></script>
   <script src="js/tools/split.js"></script>
   <script src="js/tools/organize.js"></script>
@@ -804,6 +925,7 @@
   <script src="js/tools/compress.js"></script>
   <script src="js/tools/images.js"></script>
   <script src="js/tools/idcard.js"></script>
+  <script src="js/tools/photo.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

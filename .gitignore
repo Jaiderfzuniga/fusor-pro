@@ -1,3 +1,8 @@
 # Notas y bocetos internos de la herramienta de dise?o
 .impeccable/mocks/
 .impeccable/questions/
+
+# Pruebas automáticas
+node_modules/
+test-results/
+playwright-report/

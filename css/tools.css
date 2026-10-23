@@ -4,12 +4,13 @@
 /* ---------- piezas compartidas ---------- */
 .tally--2{grid-template-columns:repeat(2,1fr);}
 .modes--3{grid-template-columns:repeat(3, minmax(0,1fr));}
+.modes--4{grid-template-columns:repeat(4, minmax(0,1fr));}
 /* opciones cortas: botones segmentados, el radio queda oculto pero accesible */
-.modes--3 .mode{position:relative;justify-content:center;padding:var(--s-2) var(--s-1);}
-.modes--3 .mode input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;}
-.modes--3 .mode__name{white-space:nowrap;}
-.modes--3 .mode:has(input:checked) .mode__name{color:var(--tool-text);}
-.modes--3 .mode:has(input:focus-visible){outline:2px solid var(--ink);outline-offset:2px;}
+.modes--3 .mode,.modes--4 .mode{position:relative;justify-content:center;padding:var(--s-2) var(--s-1);}
+.modes--3 .mode input,.modes--4 .mode input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;}
+.modes--3 .mode__name,.modes--4 .mode__name{white-space:nowrap;}
+.modes--3 .mode:has(input:checked) .mode__name,.modes--4 .mode:has(input:checked) .mode__name{color:var(--tool-text);}
+.modes--3 .mode:has(input:focus-visible),.modes--4 .mode:has(input:focus-visible){outline:2px solid var(--ink);outline-offset:2px;}
 .modes--grid .mode:not(:has(.mode__desc)){align-items:center;}
 .modes--grid .mode:not(:has(.mode__desc)) input{margin-top:0;}
 .field__control--grow{flex:1;min-width:90px;}
@@ -85,6 +86,17 @@
 }
 .id-preview canvas{display:block;width:100%;height:100%;}
 .id-preview__note{margin-top:var(--s-2);font-size:var(--fs-sm);color:var(--ink-2);font-weight:600;}
+
+/* ---------- Foto para documentos ---------- */
+.photo-edit{display:flex;flex-direction:column;gap:var(--s-2);max-width:460px;margin-bottom:var(--s-6);}
+.crop--photo .crop__stage{max-height:none;}
+/* óvalo guía para la cara */
+.crop__face{
+  position:absolute;left:22%;right:22%;top:10%;height:62%;
+  border:1.5px dashed rgba(255,255,255,.8);border-radius:50%;
+  pointer-events:none;
+}
+.id-preview.is-photo{width:min(100%, 180px);}
 
 @media (max-width:820px){
   .id-slots{grid-template-columns:minmax(0,1fr);}

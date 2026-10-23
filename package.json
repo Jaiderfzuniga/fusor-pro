@@ -1,0 +1,13 @@
+{
+  "name": "fusor",
+  "private": true,
+  "description": "FUSOR: herramientas PDF en el navegador. Este archivo solo sirve para las pruebas automáticas; la página no necesita instalar nada.",
+  "scripts": {
+    "test": "playwright test",
+    "test:ver": "playwright test --headed",
+    "test:informe": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}

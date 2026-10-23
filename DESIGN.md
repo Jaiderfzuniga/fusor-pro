@@ -17,6 +17,7 @@ Mundo visual: **risografía**. Papel blanco frío, tinta negra azulada y tres ti
 | `--orange` | #ff4800 | tinta de **Comprimir** |
 | `--green` | #325500 | tinta de **Imágenes a PDF** |
 | `--teal` | #00838a | tinta de **Ampliar documento** |
+| `--red` | #f15060 | tinta de **Foto 3×4** |
 | `--page` | #ffffff | hoja de un documento: blanca también en modo oscuro |
 
 **Modo oscuro:** `js/core/theme.js` pone `data-theme` en `<html>` (elección guardada o, si no hay, `prefers-color-scheme`); el botón luna / sol junto al logo lo cambia. El papel pasa a tinta azul noche (`--paper` #14161f) y el texto se aclara; las tintas se suman con `screen` en vez de `multiply`, y las hojas de documento, el área de firma y las firmas guardadas siguen siendo blancas.
