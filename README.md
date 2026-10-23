@@ -17,7 +17,7 @@ Herramienta web para trabajar con PDF directamente en el navegador. Ningún arch
 
 Cada herramienta tiene su propia URL: `#unir`, `#dividir`, `#organizar`, `#firmar`, `#comprimir`, `#imagenes`, `#ampliar`.
 
-La página sigue el modo claro u oscuro del sistema; las hojas de los documentos se ven siempre blancas.
+Modo claro u oscuro: el botón junto al logo (luna / sol) cambia el tema y lo recuerda en el navegador; mientras no se use, sigue la configuración del sistema. Las hojas de los documentos se ven siempre blancas. En pantallas angostas las pestañas se ordenan en 4 arriba y 3 abajo.
 
 ### Firmar: detalles
 
@@ -45,6 +45,7 @@ fusor-pro/
 │   └── tools.css           → Comprimir, Imágenes, Ampliar, formularios y modo oscuro
 ├── js/
 │   ├── core/
+│   │   ├── theme.js        → modo claro u oscuro (se carga en <head>)
 │   │   ├── utils.js        → utilidades (rangos de páginas, nombres, tamaños)
 │   │   ├── engine.js       → leer, validar, unir y construir PDF; miniaturas
 │   │   ├── pdfjs-loader.mjs → carga pdf.js (módulo ES)

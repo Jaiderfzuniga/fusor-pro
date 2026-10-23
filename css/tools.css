@@ -92,17 +92,15 @@
 }
 
 /* ---------- modo oscuro: lo que debe seguir siendo papel ---------- */
-@media (prefers-color-scheme: dark){
-  .page__sheet,.sign-page__sheet,.studio__padwrap,.studio__typed,.studio__pad,.sig__pick{background-color:var(--page);}
-  .page__num-ghost{color:#c9ccd6;}
-  .sig__pick{background-image:linear-gradient(#cfd3dc, #cfd3dc);}
-  .studio__typed.is-empty{color:#c9ccd6;}
-  .studio__padhint{color:#62677b;}
-  .studio__line{background:#a9aebb;}
-  /* sobre fondo oscuro las tintas se suman en lugar de multiplicarse */
-  .work__title::before,.work__title::after,.drop__art rect,.drop__art path.sheet,.brand__overprint,.drop::before,.file__thumb-ink{mix-blend-mode:screen;}
-  .drop__art .ink-line,.drop__art .sig-stroke{stroke:var(--ink);}
-  .btn--ink:hover{background:#ffffff;}
-  .tabs__ink::after{opacity:.2;mix-blend-mode:overlay;}
-  input,select,textarea{color-scheme:dark;}
-}
+[data-theme="dark"] .page__sheet,[data-theme="dark"] .sign-page__sheet,[data-theme="dark"] .studio__padwrap,[data-theme="dark"] .studio__typed,[data-theme="dark"] .studio__pad,[data-theme="dark"] .sig__pick{background-color:var(--page);}
+[data-theme="dark"] .page__num-ghost{color:#c9ccd6;}
+[data-theme="dark"] .sig__pick{background-image:linear-gradient(#cfd3dc, #cfd3dc);}
+[data-theme="dark"] .studio__typed.is-empty{color:#c9ccd6;}
+[data-theme="dark"] .studio__padhint{color:#62677b;}
+[data-theme="dark"] .studio__line{background:#a9aebb;}
+/* sobre fondo oscuro las tintas se suman en lugar de multiplicarse */
+[data-theme="dark"] .work__title::before,[data-theme="dark"] .work__title::after,[data-theme="dark"] .drop__art rect,[data-theme="dark"] .drop__art path.sheet,[data-theme="dark"] .brand__overprint,[data-theme="dark"] .drop::before,[data-theme="dark"] .file__thumb-ink{mix-blend-mode:screen;}
+[data-theme="dark"] .drop__art .ink-line,[data-theme="dark"] .drop__art .sig-stroke{stroke:var(--ink);}
+[data-theme="dark"] .btn--ink:hover{background:#ffffff;}
+[data-theme="dark"] .tabs__ink::after{opacity:.2;mix-blend-mode:overlay;}
+[data-theme="dark"] input,[data-theme="dark"] select,[data-theme="dark"] textarea{color-scheme:dark;}

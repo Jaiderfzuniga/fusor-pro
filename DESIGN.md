@@ -19,7 +19,7 @@ Mundo visual: **risografía**. Papel blanco frío, tinta negra azulada y tres ti
 | `--teal` | #00838a | tinta de **Ampliar documento** |
 | `--page` | #ffffff | hoja de un documento: blanca también en modo oscuro |
 
-**Modo oscuro:** sigue `prefers-color-scheme`. El papel pasa a tinta azul noche (`--paper` #14161f) y el texto se aclara; las tintas se suman con `screen` en vez de `multiply`, y las hojas de documento, el área de firma y las firmas guardadas siguen siendo blancas.
+**Modo oscuro:** `js/core/theme.js` pone `data-theme` en `<html>` (elección guardada o, si no hay, `prefers-color-scheme`); el botón luna / sol junto al logo lo cambia. El papel pasa a tinta azul noche (`--paper` #14161f) y el texto se aclara; las tintas se suman con `screen` en vez de `multiply`, y las hojas de documento, el área de firma y las firmas guardadas siguen siendo blancas.
 | `--danger` | #c8102e | errores y páginas quitadas |
 
 `body[data-tool]` redefine `--tool`, `--tool-on` (texto sobre la tinta), `--tool-text` (tinta legible como texto) y `--tool-wash` (fondo suave). Las tintas solo se usan como relleno; para texto se usa `--tool-text`.
