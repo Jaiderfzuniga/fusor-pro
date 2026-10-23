@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FUSOR — Unir, dividir y organizar PDF</title>
-  <meta name="description" content="Une, divide y organiza archivos PDF directamente en tu navegador. Nada se sube a un servidor." />
+  <title>FUSOR — Unir, dividir, organizar y firmar PDF</title>
+  <meta name="description" content="Une, divide, organiza y firma archivos PDF y Word directamente en tu navegador. Nada se sube a un servidor." />
   <meta name="theme-color" content="#f4f5f7" />
   <!-- Seguridad: solo se carga código del propio sitio; nada se envía a otros servidores. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self' data:; img-src 'self' data: blob:; worker-src 'self' blob:; connect-src 'self' blob: data:; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests" />
@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/sign.css">
   <link rel="stylesheet" href="css/motion.css">
 </head>
 <body data-tool="merge">
@@ -41,6 +42,13 @@
       <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
       <symbol id="i-sort" viewBox="0 0 24 24"><path d="M7 4v16"/><path d="m3 16 4 4 4-4"/><path d="M14 5h7M14 10h5M14 15h3"/></symbol>
       <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5"/></symbol>
+      <symbol id="i-sign" viewBox="0 0 24 24"><path d="M3 17c2.5-3 4.5-9 7-9 2 0 0 8 2.5 8 1.5 0 2.5-3 4-3 1 0 1.2 2 2.5 2H21"/><path d="M3 21h18"/></symbol>
+      <symbol id="i-pen" viewBox="0 0 24 24"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z"/><path d="m14.5 5.5 3 3"/></symbol>
+      <symbol id="i-type" viewBox="0 0 24 24"><path d="M5 6V4h14v2"/><path d="M12 4v16"/><path d="M9 20h6"/></symbol>
+      <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.75"/><path d="m20.5 16-5-5-9 8.5"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="12" height="12" rx="2"/><path d="M15.5 8.5V5.5a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17"/><path d="M8 3v4M16 3v4"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
     </defs>
   </svg>
 
@@ -63,6 +71,9 @@
       </button>
       <button class="tab" role="tab" id="tab-organize" aria-controls="tool-organize" data-tool="organize" data-hash="organizar" aria-selected="false" tabindex="-1">
         <svg class="icon"><use href="#i-grid"/></svg><span>Organizar</span>
+      </button>
+      <button class="tab" role="tab" id="tab-sign" aria-controls="tool-sign" data-tool="sign" data-hash="firmar" aria-selected="false" tabindex="-1">
+        <svg class="icon"><use href="#i-sign"/></svg><span>Firmar</span>
       </button>
     </nav>
 
@@ -284,17 +295,185 @@
         </div>
       </aside>
     </section>
+
+    <!-- ============ FIRMAR ============ -->
+    <section class="tool" id="tool-sign" role="tabpanel" aria-labelledby="tab-sign" hidden>
+      <div class="work">
+        <div class="work__head">
+          <h1 class="work__title" data-text="Firmar documentos">Firmar documentos</h1>
+          <p class="work__lede">Sube un PDF, Word o imagen, coloca tu firma donde va y descárgalo firmado en el formato que necesites.</p>
+        </div>
+
+        <div class="drop" data-drop="sign" tabindex="0" role="button" aria-label="Elegir un documento para firmar: PDF, Word, imagen o texto">
+          <svg class="drop__art" viewBox="0 0 148 104" aria-hidden="true">
+            <g class="a"><rect x="40" y="6" width="68" height="92" rx="3" fill="var(--blue)" opacity=".55"/></g>
+            <g class="s"><path class="sig-stroke" d="M30 74c8-8 14-26 22-26 6 0 1 22 9 22 5 0 8-9 13-9 4 0 4 6 9 6h22"/></g>
+            <g class="b"><rect x="58" y="68" width="62" height="10" rx="2" fill="var(--pink)"/></g>
+          </svg>
+          <svg class="icon icon--lg"><use href="#i-upload"/></svg>
+          <p class="drop__title">Suelta el documento aquí</p>
+          <p class="drop__sub">o <span class="link">elige un archivo</span>: PDF, Word (.docx), JPG, PNG o texto.</p>
+          <input type="file" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg,image/webp,image/gif,image/bmp,.txt,text/plain,.md,.csv" hidden />
+        </div>
+
+        <div class="doc-head" data-sign-head hidden>
+          <svg class="icon"><use href="#i-file"/></svg>
+          <div class="doc-head__info">
+            <p class="doc-head__name" data-sign-name></p>
+            <p class="doc-head__meta" data-sign-meta></p>
+          </div>
+          <button class="btn btn--quiet" type="button" data-sign-close><svg class="icon"><use href="#i-x"/></svg>Cambiar archivo</button>
+        </div>
+        <p class="grid-hint" data-sign-gridhint hidden>Arrastra una firma desde el panel hasta la página, o toca una página y luego la firma. Mueve lo que coloques arrastrándolo; cambia el tamaño desde la esquina.</p>
+        <ol class="sign-pages" data-sign-pages aria-label="Páginas del documento"></ol>
+      </div>
+
+      <aside class="side" aria-label="Opciones de firma">
+        <dl class="tally">
+          <div><dt>Páginas</dt><dd data-sign-t-pages>0</dd></div>
+          <div><dt>Firmas</dt><dd data-sign-t-sigs>0</dd></div>
+          <div><dt>Textos</dt><dd data-sign-t-texts>0</dd></div>
+        </dl>
+
+        <div class="field">
+          <p class="field__label">Tus firmas</p>
+          <ul class="sigs" data-sign-library aria-label="Firmas disponibles"></ul>
+          <p class="field__help" data-sign-empty>Aún no tienes firmas. Créala dibujando, escribiendo tu nombre o subiendo una foto.</p>
+          <button class="btn btn--ink" type="button" data-sign-create><svg class="icon"><use href="#i-pen"/></svg>Crear firma</button>
+          <p class="field__help">Se guardan solo en este navegador.</p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="signText">Agregar texto</label>
+          <div class="field__control">
+            <input id="signText" type="text" placeholder="Nombre, cédula, cargo…" maxlength="200" autocomplete="off" />
+          </div>
+          <div class="side__row">
+            <button class="btn btn--quiet" type="button" data-sign-add-text><svg class="icon"><use href="#i-type"/></svg>Agregar texto</button>
+            <button class="btn btn--quiet" type="button" data-sign-add-date><svg class="icon"><use href="#i-calendar"/></svg>Fecha de hoy</button>
+          </div>
+        </div>
+
+        <fieldset class="modes modes--grid">
+          <legend class="field__label">Descargar como</legend>
+          <label class="mode">
+            <input type="radio" name="signFormat" value="pdf" checked />
+            <span class="mode__body"><span class="mode__name">PDF</span><span class="mode__desc">Recomendado</span></span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="signFormat" value="docx" />
+            <span class="mode__body"><span class="mode__name">Word</span><span class="mode__desc">.docx</span></span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="signFormat" value="png" />
+            <span class="mode__body"><span class="mode__name">PNG</span><span class="mode__desc">Imagen nítida</span></span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="signFormat" value="jpg" />
+            <span class="mode__body"><span class="mode__name">JPG</span><span class="mode__desc">Imagen liviana</span></span>
+          </label>
+        </fieldset>
+
+        <div class="field">
+          <label class="field__label" for="signName">Nombre del archivo</label>
+          <div class="field__control field__control--suffix">
+            <input id="signName" type="text" value="documento-firmado" spellcheck="false" autocomplete="off" />
+            <span data-sign-ext>.pdf</span>
+          </div>
+        </div>
+
+        <button class="btn btn--primary" type="button" data-sign-go disabled>
+          <svg class="icon"><use href="#i-sign"/></svg><span data-sign-go-label>Firmar documento</span>
+        </button>
+        <p class="side__hint" data-sign-hint>Primero sube un documento.</p>
+
+        <div class="result" data-sign-result hidden>
+          <p class="result__title">Listo</p>
+          <p class="result__meta" data-sign-result-meta></p>
+          <a class="btn btn--ink" data-sign-download href="#" download><svg class="icon"><use href="#i-download"/></svg>Descargar de nuevo</a>
+        </div>
+      </aside>
+    </section>
   </main>
 
   <footer class="foot">
     <p>Todo el proceso ocurre en tu navegador: tus archivos nunca se suben a un servidor.</p>
   </footer>
 
+  <!-- Estudio de firma: dibujar, escribir o subir una imagen -->
+  <dialog class="studio" data-studio aria-labelledby="studioTitle">
+    <div class="studio__head">
+      <h2 class="studio__title" id="studioTitle">Crea tu firma</h2>
+      <button class="icon-btn" type="button" data-studio-close aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+
+    <div class="studio__tabs" role="tablist" aria-label="Forma de crear la firma">
+      <button class="studio__tab" role="tab" type="button" id="studioTabDraw" aria-controls="studioDraw" data-studio-tab="draw" aria-selected="true"><svg class="icon"><use href="#i-pen"/></svg>Dibujar</button>
+      <button class="studio__tab" role="tab" type="button" id="studioTabType" aria-controls="studioType" data-studio-tab="type" aria-selected="false" tabindex="-1"><svg class="icon"><use href="#i-type"/></svg>Escribir</button>
+      <button class="studio__tab" role="tab" type="button" id="studioTabUpload" aria-controls="studioUpload" data-studio-tab="upload" aria-selected="false" tabindex="-1"><svg class="icon"><use href="#i-image"/></svg>Subir imagen</button>
+    </div>
+
+    <div class="studio__panel" id="studioDraw" role="tabpanel" aria-labelledby="studioTabDraw">
+      <div class="studio__padwrap">
+        <canvas class="studio__pad" data-studio-pad tabindex="0" aria-label="Área para dibujar la firma con el ratón, el dedo o un lápiz. Suprimir borra."></canvas>
+        <span class="studio__line" aria-hidden="true"></span>
+        <p class="studio__padhint" data-studio-pad-hint aria-hidden="true">Firma aquí</p>
+      </div>
+      <div class="studio__row">
+        <label class="studio__range"><span>Grosor</span><input id="studioWeight" type="range" min="1.5" max="7" step="0.5" value="3" /></label>
+        <span class="studio__spacer"></span>
+        <button class="btn btn--quiet" type="button" data-studio-undo><svg class="icon"><use href="#i-undo"/></svg>Deshacer</button>
+        <button class="btn btn--quiet" type="button" data-studio-clear><svg class="icon"><use href="#i-trash"/></svg>Borrar</button>
+      </div>
+    </div>
+
+    <div class="studio__panel" id="studioType" role="tabpanel" aria-labelledby="studioTabType" hidden>
+      <div class="field">
+        <label class="field__label" for="studioText">Tu nombre</label>
+        <div class="field__control"><input id="studioText" type="text" maxlength="60" autocomplete="name" placeholder="Escribe tu nombre" /></div>
+      </div>
+      <p class="studio__typed" data-studio-typed aria-hidden="true">Tu nombre</p>
+      <fieldset class="studio__fonts">
+        <legend class="field__label">Estilo</legend>
+        <label class="font-opt"><input type="radio" name="studioFont" value="Great Vibes" checked /><span class="font-opt__sample font-opt__sample--vibes" data-font-sample>Tu nombre</span></label>
+        <label class="font-opt"><input type="radio" name="studioFont" value="Dancing Script" /><span class="font-opt__sample font-opt__sample--dancing" data-font-sample>Tu nombre</span></label>
+        <label class="font-opt"><input type="radio" name="studioFont" value="Caveat" /><span class="font-opt__sample font-opt__sample--caveat" data-font-sample>Tu nombre</span></label>
+      </fieldset>
+    </div>
+
+    <div class="studio__panel" id="studioUpload" role="tabpanel" aria-labelledby="studioTabUpload" hidden>
+      <div class="drop drop--small is-compact" data-studio-drop tabindex="0" role="button" aria-label="Elegir una imagen con tu firma">
+        <svg class="icon icon--lg"><use href="#i-image"/></svg>
+        <p class="drop__title">Foto o escaneo de tu firma</p>
+        <p class="drop__sub">Mejor sobre papel blanco. PNG o JPG.</p>
+        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" hidden />
+      </div>
+      <div class="studio__preview" data-studio-preview hidden></div>
+      <label class="check"><input id="studioKeyBg" type="checkbox" checked /><span>Quitar el fondo blanco</span></label>
+    </div>
+
+    <fieldset class="studio__colors">
+      <legend class="field__label">Color de la tinta</legend>
+      <label class="swatch"><input type="radio" name="studioColor" value="#1c1f2b" checked /><span class="swatch__dot swatch__dot--ink"></span><span class="visually-hidden">Negro</span></label>
+      <label class="swatch"><input type="radio" name="studioColor" value="#1d3f9a" /><span class="swatch__dot swatch__dot--blue"></span><span class="visually-hidden">Azul</span></label>
+      <label class="swatch"><input type="radio" name="studioColor" value="#321871" /><span class="swatch__dot swatch__dot--violet"></span><span class="visually-hidden">Violeta</span></label>
+    </fieldset>
+
+    <div class="studio__foot">
+      <label class="check"><input id="studioSave" type="checkbox" checked /><span>Guardarla en este navegador</span></label>
+      <span class="studio__spacer"></span>
+      <button class="btn btn--quiet" type="button" data-studio-close>Cancelar</button>
+      <button class="btn btn--tool" type="button" data-studio-use disabled><svg class="icon"><use href="#i-plus"/></svg>Usar firma</button>
+    </div>
+  </dialog>
+
   <div class="toasts" data-toasts aria-live="polite" aria-atomic="false"></div>
   <div class="press" data-press aria-hidden="true"></div>
 
   <!-- pdf-lib: leer y crear PDF (local) -->
   <script src="js/vendor/pdf-lib.min.js"></script>
+  <!-- fflate: leer Word (.docx) y crear .zip / .docx (local) -->
+  <script src="js/vendor/fflate.min.js"></script>
   <!-- pdf.js 4 (local): miniaturas de páginas; si no carga se muestran números -->
   <script type="module" src="js/core/pdfjs-loader.mjs"></script>
 
@@ -302,9 +481,13 @@
   <script src="js/core/engine.js"></script>
   <script src="js/core/motion.js"></script>
   <script src="js/core/ui.js"></script>
+  <script src="js/core/convert.js"></script>
+  <script src="js/core/export.js"></script>
+  <script src="js/core/signpad.js"></script>
   <script src="js/tools/merge.js"></script>
   <script src="js/tools/split.js"></script>
   <script src="js/tools/organize.js"></script>
+  <script src="js/tools/sign.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

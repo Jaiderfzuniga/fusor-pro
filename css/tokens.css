@@ -67,3 +67,7 @@ body[data-tool="organize"]{
   --tool:var(--yellow); --tool-on:var(--ink); --tool-text:#6b5f00; --tool-wash:#fff8b8;
   --ink-a:var(--yellow); --ink-b:var(--pink);
 }
+body[data-tool="sign"]{
+  --tool:var(--violet); --tool-on:#ffffff; --tool-text:var(--violet); --tool-wash:#ebe6f6;
+  --ink-a:var(--pink); --ink-b:var(--blue);
+}

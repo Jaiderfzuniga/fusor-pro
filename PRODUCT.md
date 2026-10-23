@@ -20,9 +20,9 @@ Todo el procesamiento ocurre localmente en el navegador: ningún archivo se sube
 
 ## Capabilities and Constraints
 
-- Herramientas: **Unir** varios PDF, **Dividir / extraer** páginas (por rangos o una por archivo), **Organizar** páginas (miniaturas, reordenar, rotar, eliminar).
+- Herramientas: **Unir** varios PDF, **Dividir / extraer** páginas (por rangos o una por archivo), **Organizar** páginas (miniaturas, reordenar, rotar, eliminar), **Firmar** documentos (PDF, Word, imágenes o texto; crear, guardar y arrastrar firmas; descargar en PDF, Word, PNG o JPG).
 - HTML, CSS y JS puros, sin build step ni backend. Publicable en GitHub Pages o Netlify.
-- pdf-lib incluido localmente en `js/vendor/` para manipular PDF.
+- pdf-lib y fflate incluidos localmente en `js/vendor/` para manipular PDF, leer Word y crear .zip/.docx.
 - Interfaz en español.
 
 ## Brand Commitments

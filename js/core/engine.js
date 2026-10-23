@@ -103,6 +103,24 @@
     }
   }
 
+  // Dibuja una página completa a una escala dada (1 = 72 ppp), fuera de la cola de
+  // miniaturas. Devuelve null si pdf.js no está disponible.
+  async function rasterize(entry, index, scale){
+    var doc = await pdfjsDoc(entry);
+    if(!doc) return null;
+    var page = await doc.getPage(index + 1);
+    var vp = page.getViewport({ scale: scale });
+    var canvas = document.createElement('canvas');
+    canvas.width = Math.round(vp.width);
+    canvas.height = Math.round(vp.height);
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    page.cleanup();
+    return canvas;
+  }
+
   // Pinta miniaturas solo cuando entran en pantalla.
   var observer = ('IntersectionObserver' in window) ? new IntersectionObserver(function(items){
     items.forEach(function(it){
@@ -165,6 +183,7 @@
 
   F.engine = {
     open: open, merge: merge, build: build,
-    lazyThumb: lazyThumb, release: release
+    lazyThumb: lazyThumb, rasterize: rasterize, release: release,
+    ready: function(){ return pdfjsReady; }
   };
 })(window.Fusor);

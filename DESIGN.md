@@ -13,6 +13,7 @@ Mundo visual: **risografía**. Papel blanco frío, tinta negra azulada y tres ti
 | `--pink` | #ff48b0 | tinta de **Unir** |
 | `--blue` | #3255a4 | tinta de **Dividir** |
 | `--yellow` | #ffe800 | tinta de **Organizar** |
+| `--violet` | #321871 | tinta de **Firmar** (rosa × azul) |
 | `--danger` | #c8102e | errores y páginas quitadas |
 
 `body[data-tool]` redefine `--tool`, `--tool-on` (texto sobre la tinta), `--tool-text` (tinta legible como texto) y `--tool-wash` (fondo suave). Las tintas solo se usan como relleno; para texto se usa `--tool-text`.
