@@ -14,6 +14,12 @@ Mundo visual: **risografía**. Papel blanco frío, tinta negra azulada y tres ti
 | `--blue` | #3255a4 | tinta de **Dividir** |
 | `--yellow` | #ffe800 | tinta de **Organizar** |
 | `--violet` | #321871 | tinta de **Firmar** (rosa × azul) |
+| `--orange` | #ff4800 | tinta de **Comprimir** |
+| `--green` | #325500 | tinta de **Imágenes a PDF** |
+| `--teal` | #00838a | tinta de **Ampliar documento** |
+| `--page` | #ffffff | hoja de un documento: blanca también en modo oscuro |
+
+**Modo oscuro:** sigue `prefers-color-scheme`. El papel pasa a tinta azul noche (`--paper` #14161f) y el texto se aclara; las tintas se suman con `screen` en vez de `multiply`, y las hojas de documento, el área de firma y las firmas guardadas siguen siendo blancas.
 | `--danger` | #c8102e | errores y páginas quitadas |
 
 `body[data-tool]` redefine `--tool`, `--tool-on` (texto sobre la tinta), `--tool-text` (tinta legible como texto) y `--tool-wash` (fondo suave). Las tintas solo se usan como relleno; para texto se usa `--tool-text`.

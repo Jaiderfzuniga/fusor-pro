@@ -16,7 +16,9 @@
     var pagesEl = $('[data-sign-pages]');
     var tPages = $('[data-sign-t-pages]'), tSigs = $('[data-sign-t-sigs]'), tTexts = $('[data-sign-t-texts]');
     var libEl = $('[data-sign-library]'), libEmpty = $('[data-sign-empty]');
-    var textInput = $('#signText');
+    var textInput = $('#signText'), initialsInput = $('#signInitials');
+    var formBox = $('[data-sign-form]'), formFields = $('[data-sign-form-fields]'), formCount = $('[data-sign-form-count]'), formKeep = $('#signFormKeep');
+    var undoBtn = $('[data-sign-undo]'), redoBtn = $('[data-sign-redo]');
     var nameInput = $('#signName'), extEl = $('[data-sign-ext]');
     var go = $('[data-sign-go]'), goLabel = $('[data-sign-go-label]'), hint = $('[data-sign-hint]');
     var result = $('[data-sign-result]'), resultMeta = $('[data-sign-result-meta]'), again = $('[data-sign-download]');
@@ -27,6 +29,8 @@
     var currentPage = 0;
     var busy = false;
     var lastUrl = null;
+    var form = [];       // campos del formulario PDF: { name, label, type, value, options, multiline, max }
+    var past = [], future = [], lastMark = null; // historial para deshacer / rehacer
 
     // ---------- abrir documento ----------
     UI.dropzone(drop, async function(files){
@@ -55,6 +59,7 @@
         nameInput.value = U.baseName(file.name).replace(/\.[^.]+$/, '') + '-firmado';
         currentPage = 0;
         render();
+        await readForm();
         if(k !== 'pdf') UI.toast(k === 'docx' ? 'Se convirtió el Word a PDF. Revisa que se vea bien antes de firmar.' : 'Se convirtió a PDF para firmarlo.');
       }catch(err){
         UI.toast(file.name + ': ' + (err && err.message ? err.message : 'No se pudo leer.'), 'error');
@@ -69,6 +74,7 @@
     function close(){
       if(doc) E.release(doc);
       doc = null; items = []; selectedId = null; pagesEl.innerHTML = ''; hideResult();
+      form = []; past = []; future = []; renderForm();
     }
     $('[data-sign-close]').addEventListener('click', function(){ if(!busy){ close(); update(); drop.focus(); } });
 
@@ -121,7 +127,8 @@
 
     function nodeOf(id){ return pagesEl.querySelector('.placed[data-id="' + id + '"]'); }
 
-    function describe(it){ return (it.kind === 'sig' ? 'Firma' : it.kind === 'date' ? 'Fecha' : 'Texto') + (it.label ? ' «' + it.label + '»' : '') + ', página ' + (it.page + 1); }
+    var KINDS = { sig: 'Firma', date: 'Fecha', text: 'Texto', stamp: 'Sello', initials: 'Iniciales' };
+    function describe(it){ return (KINDS[it.kind] || 'Texto') + (it.label ? ' «' + it.label + '»' : '') + ', página ' + (it.page + 1); }
 
     function place(it){
       var el = nodeOf(it.id);
@@ -164,14 +171,60 @@
 
     function find(id){ return items.find(function(it){ return it.id === id; }); }
 
+    // ---------- deshacer / rehacer ----------
+    function snapshot(){ return items.map(function(it){ return Object.assign({}, it); }); }
+
+    // Guarda el estado antes de un cambio. Los cambios seguidos del mismo tipo
+    // (por ejemplo, varias flechas) cuentan como uno solo.
+    function remember(tag){
+      var now = Date.now();
+      if(tag && lastMark && lastMark.tag === tag && now - lastMark.t < 800){ lastMark.t = now; return; }
+      past.push(snapshot());
+      if(past.length > 100) past.shift();
+      future = [];
+      lastMark = tag ? { tag: tag, t: now } : null;
+      paintHistory();
+    }
+
+    function restore(from, to){
+      if(!from.length || !doc) return false;
+      to.push(snapshot());
+      items = from.pop();
+      lastMark = null;
+      pagesEl.querySelectorAll('.placed').forEach(function(n){ n.remove(); });
+      if(selectedId && !find(selectedId)) selectedId = null;
+      items.forEach(place);
+      hideResult(); markCurrent(); update(); paintHistory();
+      return true;
+    }
+    function undo(){ if(!restore(past, future)) UI.toast('No hay nada que deshacer.'); }
+    function redo(){ if(!restore(future, past)) UI.toast('No hay nada que rehacer.'); }
+
+    function paintHistory(){ undoBtn.disabled = !past.length; redoBtn.disabled = !future.length; }
+    undoBtn.addEventListener('click', undo);
+    redoBtn.addEventListener('click', redo);
+
+    // Ctrl+Z / Ctrl+Y (Cmd en Mac) mientras Firmar está abierta; en un campo de texto manda el campo.
+    document.addEventListener('keydown', function(e){
+      if(document.body.dataset.tool !== 'sign' || !doc || busy) return;
+      if(!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      var k = e.key.toLowerCase();
+      if(k !== 'z' && k !== 'y') return;
+      var t = e.target;
+      if(t && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName) && t.type !== 'radio' && t.type !== 'checkbox')) return;
+      if(document.querySelector('dialog[open]')) return;
+      e.preventDefault();
+      if(k === 'y' || e.shiftKey) redo(); else undo();
+    });
+
     // Añade un elemento: en (cx, cy) del centro si se indica, si no en la parte baja de la página.
     function add(img, kind, page, cx, cy, label){
       if(!doc){ UI.toast('Primero sube el documento que quieres firmar.', 'error'); return null; }
       var ratio = img.h / img.w;
       var pr = doc.ratios[page] || 0.7071;
-      // tamaño inicial: firmas de ~30 % del ancho, textos según su largo; nunca muy altas
-      var w = kind === 'sig' ? 0.3 : Math.min(0.5, 0.035 * img.w / img.h);
-      var maxH = kind === 'sig' ? 0.12 : 0.04;
+      // tamaño inicial: firmas de ~30 % del ancho, sellos pequeños, textos según su largo; nunca muy altas
+      var w = kind === 'sig' ? 0.3 : kind === 'stamp' ? 0.045 : Math.min(0.5, 0.035 * img.w / img.h);
+      var maxH = kind === 'sig' ? 0.12 : kind === 'stamp' ? 0.05 : kind === 'initials' ? 0.05 : 0.04;
       if(w * ratio * pr > maxH) w = maxH / (ratio * pr);
       var it = { id: U.uid(), page: page, w: w, src: img.src, ratio: ratio, kind: kind, label: label || '' };
       var h = heightOf(it);
@@ -185,6 +238,7 @@
         if(it.y < 0) it.y = 0.82 - h / 2;
         clamp(it);
       }
+      remember();
       items.push(it);
       hideResult();
       place(it);
@@ -205,6 +259,7 @@
       var i = items.findIndex(function(it){ return it.id === id; });
       if(i < 0) return;
       var it = items[i];
+      remember();
       items.splice(i, 1);
       var n = nodeOf(id); if(n) n.remove();
       if(selectedId === id) selectedId = null;
@@ -214,6 +269,7 @@
 
     function copyToAll(id){
       var src = find(id); if(!src) return;
+      if(doc.pageCount > 1) remember();
       var added = 0;
       for(var p = 0; p < doc.pageCount; p++){
         if(p === src.page) continue;
@@ -248,6 +304,7 @@
       }
       if(e.target !== el) return;
       var it = find(el.dataset.id); if(!it) return;
+      var before = Object.assign({}, it);
       var step = e.shiftKey ? 0.05 : 0.005, done = true;
       if(e.key === 'ArrowLeft') it.x -= step;
       else if(e.key === 'ArrowRight') it.x += step;
@@ -260,6 +317,13 @@
       else done = false;
       if(!done) return;
       e.preventDefault();
+      if(!e.ctrlKey && !e.metaKey){
+        // el estado anterior ya se cambió arriba: se guarda una copia con el valor previo
+        var after = Object.assign({}, it);
+        Object.assign(it, before);
+        remember('key:' + it.id);
+        Object.assign(it, after);
+      }
       clamp(it); place(it); hideResult();
     });
 
@@ -291,8 +355,10 @@
       var grab = { x: (e.clientX - rect.left) / rect.width - it.x, y: (e.clientY - rect.top) / rect.height - it.y };
       el.setPointerCapture(e.pointerId);
       el.classList.add(resizing ? 'is-resizing' : 'is-moving');
+      var moved = false;
 
       function move(ev){
+        if(!moved){ moved = true; remember(); }
         if(resizing){
           var dw = (ev.clientX - start.x) / rect.width;
           var dh = (ev.clientY - start.y) / rect.height / (it.ratio * (doc.ratios[it.page] || 0.7071));
@@ -434,6 +500,122 @@
       addText(String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(), 'date');
     });
 
+    // ---------- sellos e iniciales ----------
+    // ✓ y ✗ se dibujan como trazos (no dependen de ninguna fuente).
+    function stampImage(kind){
+      var c = document.createElement('canvas'), n = 160;
+      c.width = c.height = n;
+      var ctx = c.getContext('2d');
+      ctx.strokeStyle = '#1c1f2b'; ctx.lineWidth = 18; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      if(kind === 'check'){ ctx.moveTo(22, 86); ctx.lineTo(62, 128); ctx.lineTo(140, 30); }
+      else{ ctx.moveTo(32, 32); ctx.lineTo(128, 128); ctx.moveTo(128, 32); ctx.lineTo(32, 128); }
+      ctx.stroke();
+      return { src: c.toDataURL('image/png'), w: n, h: n };
+    }
+    root.querySelectorAll('[data-sign-stamp]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var kind = b.dataset.signStamp;
+        addToCurrent(stampImage(kind), 'stamp', kind === 'check' ? '✓' : '✗');
+      });
+    });
+
+    async function addInitials(){
+      var text = initialsInput.value.trim();
+      if(!text){ initialsInput.focus(); UI.toast('Escribe tus iniciales, por ejemplo J. Z.', 'error'); return; }
+      text = text.slice(0, 12);
+      if(document.fonts) await document.fonts.load('72px "Dancing Script"', text).catch(function(){});
+      var img = SIG.textImage(text, { family: '"Dancing Script", cursive', weight: 400 });
+      if(img) addToCurrent(img, 'initials', text);
+    }
+    $('[data-sign-add-initials]').addEventListener('click', addInitials);
+    initialsInput.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); addInitials(); } });
+
+    // ---------- formulario del PDF ----------
+    async function readForm(){
+      form = [];
+      try{
+        var pdf = await PDFLib.PDFDocument.load(doc.bytes);
+        pdf.getForm().getFields().forEach(function(f){
+          var name = f.getName(), type = f.constructor.name, entry = null;
+          try{
+            if(f instanceof PDFLib.PDFTextField) entry = { type: 'text', value: f.getText() || '', multiline: f.isMultiline(), max: f.getMaxLength() };
+            else if(f instanceof PDFLib.PDFCheckBox) entry = { type: 'check', value: f.isChecked() };
+            else if(f instanceof PDFLib.PDFDropdown) entry = { type: 'select', value: (f.getSelected() || [])[0] || '', options: f.getOptions() };
+            else if(f instanceof PDFLib.PDFRadioGroup) entry = { type: 'radio', value: f.getSelected() || '', options: f.getOptions() };
+          }catch(e){ entry = null; }
+          if(!entry || (f.isReadOnly && f.isReadOnly())) return;
+          entry.name = name;
+          entry.label = name.split('.').pop().replace(/[_]+/g, ' ').replace(/\s+/g, ' ').trim() || type;
+          form.push(entry);
+        });
+      }catch(e){ form = []; }
+      renderForm();
+    }
+
+    function renderForm(){
+      formBox.hidden = !form.length;
+      formFields.innerHTML = '';
+      formCount.textContent = form.length ? U.plural(form.length, 'campo', 'campos') : '';
+      form.forEach(function(f, i){
+        var id = 'signField' + i, row = document.createElement('div');
+        row.className = 'form-field form-field--' + f.type;
+        var label = U.escapeHtml(f.label);
+        if(f.type === 'check'){
+          row.innerHTML = '<label class="check"><input type="checkbox" id="' + id + '"' + (f.value ? ' checked' : '') + '><span>' + label + '</span></label>';
+        }else if(f.type === 'select' || f.type === 'radio'){
+          row.innerHTML = '<label class="field__label" for="' + id + '">' + label + '</label><div class="field__control"><select id="' + id + '"><option value="">—</option>' +
+            f.options.map(function(o){ return '<option' + (o === f.value ? ' selected' : '') + '>' + U.escapeHtml(o) + '</option>'; }).join('') + '</select></div>';
+        }else{
+          var tag = f.multiline ? 'textarea rows="3"' : 'input type="text"';
+          row.innerHTML = '<label class="field__label" for="' + id + '">' + label + '</label><div class="field__control"><' + tag + ' id="' + id + '"' +
+            (f.max ? ' maxlength="' + f.max + '"' : '') + ' autocomplete="off"></' + (f.multiline ? 'textarea' : 'input') + '></div>';
+          row.querySelector('#' + id).value = f.value;
+        }
+        var input = row.querySelector('#' + id);
+        input.addEventListener(f.type === 'text' ? 'input' : 'change', function(){
+          f.value = f.type === 'check' ? input.checked : input.value;
+          hideResult(); update();
+        });
+        formFields.appendChild(row);
+      });
+    }
+    formKeep.addEventListener('change', hideResult);
+
+    function fillForm(pdf){
+      if(!form.length) return;
+      var pf = pdf.getForm();
+      form.forEach(function(f){
+        try{
+          var field = pf.getField(f.name);
+          if(f.type === 'text') field.setText(f.value || '');
+          else if(f.type === 'check'){ if(f.value) field.check(); else field.uncheck(); }
+          else if(f.type === 'select'){ if(f.value) field.select(f.value); else field.clear(); }
+          else if(f.type === 'radio'){ if(f.value) field.select(f.value); else field.clear(); }
+        }catch(e){
+          throw new Error('el campo «' + f.label + '» tiene caracteres que el formulario no admite');
+        }
+      });
+      if(!formKeep.checked){
+        // aplanar: el texto queda impreso en la página y las firmas pueden ir encima
+        try{ pf.flatten(); dropDeadAnnots(pdf); }catch(e){ /* algunos formularios no se dejan aplanar: quedan rellenados y editables */ }
+      }
+    }
+
+    // pdf-lib, al aplanar, deja en cada página referencias a los campos que borró.
+    function dropDeadAnnots(pdf){
+      var ctx = pdf.context, ANNOTS = PDFLib.PDFName.of('Annots');
+      pdf.getPages().forEach(function(page){
+        var arr = page.node.lookup(ANNOTS);
+        if(!(arr instanceof PDFLib.PDFArray)) return;
+        for(var i = arr.size() - 1; i >= 0; i--){
+          var ref = arr.get(i);
+          if(ref instanceof PDFLib.PDFRef && !ctx.lookup(ref)) arr.remove(i);
+        }
+        if(!arr.size()) page.node.delete(ANNOTS);
+      });
+    }
+
     // ---------- formato y descarga ----------
     function format(){ var r = root.querySelector('input[name=signFormat]:checked'); return r ? r.value : 'pdf'; }
     root.querySelectorAll('input[name=signFormat]').forEach(function(r){
@@ -456,10 +638,12 @@
       }
       var f = X.FORMATS[format()];
       extEl.textContent = '.' + (f.ext === 'pdf' || f.ext === 'docx' || !has || doc.pageCount === 1 ? f.ext : 'zip');
+      paintHistory();
       go.disabled = !has || busy;
       goLabel.textContent = !has ? 'Firmar documento' : items.length ? 'Firmar y descargar ' + f.label : 'Descargar ' + f.label;
       hint.textContent = !has ? 'Primero sube un documento.' :
-        !items.length ? 'Aún no hay firmas: se descargará sin firmar.' :
+        !items.length && !form.length ? 'Aún no hay firmas: se descargará sin firmar.' :
+        !items.length ? 'Se descargará con el formulario rellenado y sin firmas.' :
         (format() === 'png' || format() === 'jpg') && doc.pageCount > 1 ? 'Cada página será una imagen dentro de un .zip.' :
         format() === 'docx' ? 'Cada página va como imagen en el Word, para que se vea idéntica.' :
         'Las firmas se integran en el documento.';
@@ -487,6 +671,7 @@
 
     async function signedPdf(){
       var pdf = await PDFLib.PDFDocument.load(doc.bytes);
+      fillForm(pdf);
       var pages = pdf.getPages(), cache = {};
       for(var i = 0; i < items.length; i++){
         var it = items[i];
@@ -494,7 +679,7 @@
         var p = placement(pages[it.page], it);
         pages[it.page].drawImage(cache[it.src], { x: p.x, y: p.y, width: p.width, height: p.height, rotate: PDFLib.degrees(p.rotate) });
       }
-      if(items.length) pdf.setModificationDate(new Date());
+      if(items.length || form.length) pdf.setModificationDate(new Date());
       return pdf.save();
     }
 

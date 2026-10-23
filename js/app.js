@@ -16,9 +16,17 @@
   F.tools.split.init(document.getElementById('tool-split'));
   F.tools.organize.init(document.getElementById('tool-organize'));
   F.tools.sign.init(document.getElementById('tool-sign'));
+  F.tools.compress.init(document.getElementById('tool-compress'));
+  F.tools.images.init(document.getElementById('tool-images'));
+  F.tools.idcard.init(document.getElementById('tool-idcard'));
 
   var ink = document.querySelector('.tabs__ink');
   var current = null;
+
+  function panelTitle(tab){
+    var h = document.getElementById(tab.getAttribute('aria-controls')).querySelector('.work__title');
+    return h ? h.textContent.trim() : '';
+  }
 
   function select(tab, focus){
     var changed = tab !== current;
@@ -29,7 +37,7 @@
       document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
     });
     document.body.dataset.tool = tab.dataset.tool;
-    document.title = 'FUSOR — ' + tab.textContent.trim() + (tab.dataset.tool === 'sign' ? ' documentos' : ' PDF');
+    document.title = 'FUSOR — ' + (panelTitle(tab) || tab.textContent.trim());
     F.motion.slideInk(ink, tab, current === null);
     if(changed){
       var panel = document.getElementById(tab.getAttribute('aria-controls'));
@@ -39,6 +47,8 @@
       panel._enterT = setTimeout(function(){ panel.classList.remove('is-entering'); }, 900);
     }
     current = tab;
+    // en pantallas angostas la barra de pestañas se desplaza hasta la activa
+    if(tab.scrollIntoView && changed) tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     if(focus) tab.focus();
   }
 

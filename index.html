@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FUSOR — Unir, dividir, organizar y firmar PDF</title>
-  <meta name="description" content="Une, divide, organiza y firma archivos PDF y Word directamente en tu navegador. Nada se sube a un servidor." />
-  <meta name="theme-color" content="#f4f5f7" />
+  <title>FUSOR — Herramientas PDF en tu navegador</title>
+  <meta name="description" content="Une, divide, organiza, firma y comprime PDF; convierte fotos a PDF y amplía documentos al 150 %. Todo en tu navegador: nada se sube a un servidor." />
+  <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#14161f" media="(prefers-color-scheme: dark)" />
+  <meta name="color-scheme" content="light dark" />
   <!-- Seguridad: solo se carga código del propio sitio; nada se envía a otros servidores. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self' data:; img-src 'self' data: blob:; worker-src 'self' blob:; connect-src 'self' blob: data:; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests" />
   <meta name="referrer" content="no-referrer" />
@@ -18,6 +20,7 @@
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/sign.css">
   <link rel="stylesheet" href="css/motion.css">
+  <link rel="stylesheet" href="css/tools.css">
 </head>
 <body data-tool="merge">
 
@@ -48,6 +51,12 @@
       <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="12" height="12" rx="2"/><path d="M15.5 8.5V5.5a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/></symbol>
       <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17"/><path d="M8 3v4M16 3v4"/></symbol>
       <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></symbol>
+      <symbol id="i-compress" viewBox="0 0 24 24"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="m9.5 9 2.5 2.5L14.5 9"/><path d="m9.5 17 2.5-2.5 2.5 2.5"/></symbol>
+      <symbol id="i-photos" viewBox="0 0 24 24"><rect x="7.5" y="3.5" width="13" height="13" rx="2"/><path d="M16.5 20.5H6a2.5 2.5 0 0 1-2.5-2.5V7.5"/><circle cx="12" cy="8" r="1.5"/><path d="m20.5 13-3.5-3.5-6 6"/></symbol>
+      <symbol id="i-idcard" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M5.5 16c.6-1.5 1.7-2.2 3-2.2s2.4.7 3 2.2"/><path d="M14.5 10h4M14.5 13.5h3"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+      <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M20 4v5h-5"/><path d="M19.4 9A8 8 0 1 0 18 17"/></symbol>
     </defs>
   </svg>
 
@@ -73,6 +82,15 @@
       </button>
       <button class="tab" role="tab" id="tab-sign" aria-controls="tool-sign" data-tool="sign" data-hash="firmar" aria-selected="false" tabindex="-1">
         <svg class="icon"><use href="#i-sign"/></svg><span>Firmar</span>
+      </button>
+      <button class="tab" role="tab" id="tab-compress" aria-controls="tool-compress" data-tool="compress" data-hash="comprimir" aria-selected="false" tabindex="-1">
+        <svg class="icon"><use href="#i-compress"/></svg><span>Comprimir</span>
+      </button>
+      <button class="tab" role="tab" id="tab-images" aria-controls="tool-images" data-tool="images" data-hash="imagenes" aria-selected="false" tabindex="-1">
+        <svg class="icon"><use href="#i-photos"/></svg><span>Imágenes</span>
+      </button>
+      <button class="tab" role="tab" id="tab-idcard" aria-controls="tool-idcard" data-tool="idcard" data-hash="ampliar" aria-selected="false" tabindex="-1">
+        <svg class="icon"><use href="#i-idcard"/></svg><span>Ampliar</span>
       </button>
     </nav>
   </header>
@@ -316,9 +334,17 @@
             <p class="doc-head__name" data-sign-name></p>
             <p class="doc-head__meta" data-sign-meta></p>
           </div>
+          <button class="icon-btn" type="button" data-sign-undo disabled aria-label="Deshacer (Ctrl+Z)" title="Deshacer (Ctrl+Z)"><svg class="icon"><use href="#i-undo"/></svg></button>
+          <button class="icon-btn" type="button" data-sign-redo disabled aria-label="Rehacer (Ctrl+Y)" title="Rehacer (Ctrl+Y)"><svg class="icon"><use href="#i-redo"/></svg></button>
           <button class="btn btn--quiet" type="button" data-sign-close><svg class="icon"><use href="#i-x"/></svg>Cambiar archivo</button>
         </div>
         <p class="grid-hint" data-sign-gridhint hidden>Arrastra una firma desde el panel hasta la página, o toca una página y luego la firma. Mueve lo que coloques arrastrándolo; cambia el tamaño desde la esquina.</p>
+        <details class="form-box" data-sign-form open hidden>
+          <summary class="form-box__head"><span class="form-box__title">Este PDF tiene un formulario</span><span class="form-box__count" data-sign-form-count></span></summary>
+          <p class="field__help">Rellena los campos aquí; se escriben en el documento al descargarlo.</p>
+          <div class="form-box__fields" data-sign-form-fields></div>
+          <label class="check"><input id="signFormKeep" type="checkbox" /><span>Dejar el formulario editable (sin aplanar)</span></label>
+        </details>
         <ol class="sign-pages" data-sign-pages aria-label="Páginas del documento"></ol>
       </div>
 
@@ -346,6 +372,19 @@
             <button class="btn btn--quiet" type="button" data-sign-add-text><svg class="icon"><use href="#i-type"/></svg>Agregar texto</button>
             <button class="btn btn--quiet" type="button" data-sign-add-date><svg class="icon"><use href="#i-calendar"/></svg>Fecha de hoy</button>
           </div>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="signInitials">Sellos e iniciales</label>
+          <div class="side__row">
+            <button class="btn btn--quiet btn--stamp" type="button" data-sign-stamp="check" aria-label="Agregar marca de verificación"><svg class="icon"><use href="#i-check"/></svg></button>
+            <button class="btn btn--quiet btn--stamp" type="button" data-sign-stamp="cross" aria-label="Agregar una equis"><svg class="icon"><use href="#i-x"/></svg></button>
+            <div class="field__control field__control--grow">
+              <input id="signInitials" type="text" placeholder="Iniciales" maxlength="12" autocomplete="off" />
+            </div>
+            <button class="btn btn--quiet" type="button" data-sign-add-initials>Agregar</button>
+          </div>
+          <p class="field__help">Ctrl+Z deshace y Ctrl+Y rehace.</p>
         </div>
 
         <fieldset class="modes modes--grid">
@@ -385,6 +424,272 @@
           <p class="result__title">Listo</p>
           <p class="result__meta" data-sign-result-meta></p>
           <a class="btn btn--ink" data-sign-download href="#" download><svg class="icon"><use href="#i-download"/></svg>Descargar de nuevo</a>
+        </div>
+      </aside>
+    </section>
+
+    <!-- ============ COMPRIMIR ============ -->
+    <section class="tool" id="tool-compress" role="tabpanel" aria-labelledby="tab-compress" hidden>
+      <div class="work">
+        <div class="work__head">
+          <h1 class="work__title" data-text="Comprimir PDF">Comprimir PDF</h1>
+          <p class="work__lede">Reduce el peso de un PDF para enviarlo por correo o subirlo a un formulario.</p>
+        </div>
+
+        <div class="drop" data-drop="compress" tabindex="0" role="button" aria-label="Elegir un archivo PDF para comprimir">
+          <svg class="drop__art" viewBox="0 0 148 104" aria-hidden="true">
+            <g class="a"><rect x="30" y="8" width="56" height="88" rx="3" fill="var(--orange)" opacity=".55"/></g>
+            <g class="b"><rect x="62" y="30" width="56" height="66" rx="3" fill="var(--orange)"/></g>
+          </svg>
+          <svg class="icon icon--lg"><use href="#i-upload"/></svg>
+          <p class="drop__title">Suelta un PDF aquí</p>
+          <p class="drop__sub">o <span class="link">elige un archivo</span> de tu equipo.</p>
+          <input type="file" accept="application/pdf,.pdf" hidden />
+        </div>
+
+        <div class="doc-head" data-cmp-head hidden>
+          <svg class="icon"><use href="#i-file"/></svg>
+          <div class="doc-head__info">
+            <p class="doc-head__name" data-cmp-name></p>
+            <p class="doc-head__meta" data-cmp-meta></p>
+          </div>
+          <button class="btn btn--quiet" type="button" data-cmp-close><svg class="icon"><use href="#i-x"/></svg>Cambiar archivo</button>
+        </div>
+        <ul class="pages" data-cmp-pages aria-label="Páginas del documento"></ul>
+      </div>
+
+      <aside class="side" aria-label="Opciones de compresión">
+        <dl class="tally">
+          <div><dt>Original</dt><dd data-cmp-t-before>—</dd></div>
+          <div><dt>Comprimido</dt><dd data-cmp-t-after>—</dd></div>
+          <div><dt>Ahorro</dt><dd data-cmp-t-saved>—</dd></div>
+        </dl>
+
+        <fieldset class="modes">
+          <legend class="field__label">Nivel de compresión</legend>
+          <label class="mode">
+            <input type="radio" name="cmpLevel" value="medium" checked />
+            <span class="mode__body"><span class="mode__name">Recomendada</span><span class="mode__desc">Buena calidad y mucho menos peso.</span></span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="cmpLevel" value="strong" />
+            <span class="mode__body"><span class="mode__name">Fuerte</span><span class="mode__desc">El menor peso posible; algo menos nítido.</span></span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="cmpLevel" value="light" />
+            <span class="mode__body"><span class="mode__name">Ligera</span><span class="mode__desc">Sin perder calidad ni el texto seleccionable.</span></span>
+          </label>
+        </fieldset>
+        <label class="check"><input id="cmpGray" type="checkbox" /><span>Blanco y negro (pesa aún menos)</span></label>
+
+        <div class="field">
+          <label class="field__label" for="cmpName">Nombre del archivo</label>
+          <div class="field__control field__control--suffix">
+            <input id="cmpName" type="text" value="documento-comprimido" spellcheck="false" autocomplete="off" />
+            <span>.pdf</span>
+          </div>
+        </div>
+
+        <button class="btn btn--primary" type="button" data-cmp-go disabled>
+          <svg class="icon"><use href="#i-compress"/></svg><span data-cmp-go-label>Comprimir PDF</span>
+        </button>
+        <p class="side__hint" data-cmp-hint>Primero elige un PDF.</p>
+
+        <div class="result" data-cmp-result hidden>
+          <p class="result__title">Listo</p>
+          <p class="result__meta" data-cmp-result-meta></p>
+          <a class="btn btn--ink" data-cmp-download href="#" download><svg class="icon"><use href="#i-download"/></svg>Descargar de nuevo</a>
+        </div>
+      </aside>
+    </section>
+
+    <!-- ============ IMÁGENES A PDF ============ -->
+    <section class="tool" id="tool-images" role="tabpanel" aria-labelledby="tab-images" hidden>
+      <div class="work">
+        <div class="work__head">
+          <h1 class="work__title" data-text="Imágenes a PDF">Imágenes a PDF</h1>
+          <p class="work__lede">Junta varias fotos en un solo PDF, una por página. Ideal para documentos escaneados con el celular.</p>
+        </div>
+
+        <div class="drop" data-drop="images" tabindex="0" role="button" aria-label="Elegir imágenes para convertir a PDF">
+          <svg class="drop__art" viewBox="0 0 148 104" aria-hidden="true">
+            <g class="a"><rect x="26" y="14" width="54" height="72" rx="3" fill="var(--green)" opacity=".6"/></g>
+            <g class="b"><rect x="58" y="22" width="64" height="74" rx="3" fill="var(--yellow)"/></g>
+            <circle cx="104" cy="40" r="7" fill="var(--green)"/>
+          </svg>
+          <svg class="icon icon--lg"><use href="#i-upload"/></svg>
+          <p class="drop__title">Suelta tus imágenes aquí</p>
+          <p class="drop__sub">o <span class="link">elige fotos</span>: JPG, PNG, WEBP. Puedes añadir varias a la vez.</p>
+          <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" multiple hidden />
+        </div>
+
+        <div class="list-head" data-img-head hidden>
+          <p class="list-head__count" data-img-count></p>
+          <div class="list-head__actions">
+            <button class="btn btn--quiet" type="button" data-img-sort><svg class="icon"><use href="#i-sort"/></svg>Ordenar por nombre</button>
+            <button class="btn btn--quiet" type="button" data-img-clear><svg class="icon"><use href="#i-x"/></svg>Vaciar</button>
+          </div>
+        </div>
+        <ul class="pages pages--organize" data-img-pages aria-label="Imágenes, en el orden del PDF"></ul>
+      </div>
+
+      <aside class="side" aria-label="Opciones de imágenes a PDF">
+        <dl class="tally tally--2">
+          <div><dt>Imágenes</dt><dd data-img-t-files>0</dd></div>
+          <div><dt>Tamaño</dt><dd data-img-t-size>0 B</dd></div>
+        </dl>
+
+        <fieldset class="modes modes--grid">
+          <legend class="field__label">Tamaño de página</legend>
+          <label class="mode"><input type="radio" name="imgPage" value="letter" checked /><span class="mode__body"><span class="mode__name">Carta</span></span></label>
+          <label class="mode"><input type="radio" name="imgPage" value="a4" /><span class="mode__body"><span class="mode__name">A4</span></span></label>
+          <label class="mode"><input type="radio" name="imgPage" value="legal" /><span class="mode__body"><span class="mode__name">Oficio</span></span></label>
+          <label class="mode"><input type="radio" name="imgPage" value="fit" /><span class="mode__body"><span class="mode__name">Igual a la foto</span></span></label>
+        </fieldset>
+
+        <fieldset class="modes modes--grid modes--3">
+          <legend class="field__label">Margen</legend>
+          <label class="mode"><input type="radio" name="imgMargin" value="none" /><span class="mode__body"><span class="mode__name">Sin</span></span></label>
+          <label class="mode"><input type="radio" name="imgMargin" value="small" checked /><span class="mode__body"><span class="mode__name">Pequeño</span></span></label>
+          <label class="mode"><input type="radio" name="imgMargin" value="normal" /><span class="mode__body"><span class="mode__name">Normal</span></span></label>
+        </fieldset>
+        <label class="check"><input id="imgLight" type="checkbox" checked /><span>Reducir el peso de las fotos</span></label>
+
+        <div class="field">
+          <label class="field__label" for="imgName">Nombre del archivo</label>
+          <div class="field__control field__control--suffix">
+            <input id="imgName" type="text" value="imagenes" spellcheck="false" autocomplete="off" />
+            <span>.pdf</span>
+          </div>
+        </div>
+
+        <button class="btn btn--primary" type="button" data-img-go disabled>
+          <svg class="icon"><use href="#i-photos"/></svg><span data-img-go-label>Crear PDF</span>
+        </button>
+        <p class="side__hint" data-img-hint>Añade al menos una imagen.</p>
+
+        <div class="result" data-img-result hidden>
+          <p class="result__title">Listo</p>
+          <p class="result__meta" data-img-result-meta></p>
+          <a class="btn btn--ink" data-img-download href="#" download><svg class="icon"><use href="#i-download"/></svg>Descargar de nuevo</a>
+        </div>
+      </aside>
+    </section>
+
+    <!-- ============ AMPLIAR DOCUMENTO ============ -->
+    <section class="tool" id="tool-idcard" role="tabpanel" aria-labelledby="tab-idcard" hidden>
+      <div class="work">
+        <div class="work__head">
+          <h1 class="work__title" data-text="Ampliar documento">Ampliar documento</h1>
+          <p class="work__lede">Sube las fotos de tu cédula u otro documento: se recortan, se limpian y quedan en una hoja ampliada al 150 % (u otro tamaño), lista para imprimir o subir.</p>
+        </div>
+
+        <div class="id-slots">
+          <div class="id-slot" data-id-slot="front">
+            <p class="id-slot__title">Frente</p>
+            <div class="drop drop--slot" data-drop="id-front" tabindex="0" role="button" aria-label="Elegir la foto del frente del documento">
+              <svg class="icon icon--lg"><use href="#i-idcard"/></svg>
+              <p class="drop__title">Foto del frente</p>
+              <p class="drop__sub"><span class="link">Elige o toma una foto</span></p>
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" hidden />
+            </div>
+            <div class="crop" data-id-crop hidden>
+              <div class="crop__stage">
+                <div class="crop__box" tabindex="0" role="group" aria-label="Recorte del frente. Arrastra para moverlo, usa las esquinas para el tamaño. Con teclado: flechas y más o menos.">
+                  <span class="crop__h" data-h="nw"></span><span class="crop__h" data-h="ne"></span><span class="crop__h" data-h="sw"></span><span class="crop__h" data-h="se"></span>
+                </div>
+              </div>
+            </div>
+            <div class="side__row" data-id-actions hidden>
+              <button class="btn btn--quiet" type="button" data-id-rotate><svg class="icon"><use href="#i-rotate"/></svg>Girar</button>
+              <button class="btn btn--quiet" type="button" data-id-remove><svg class="icon"><use href="#i-trash"/></svg>Quitar</button>
+            </div>
+          </div>
+          <div class="id-slot" data-id-slot="back">
+            <p class="id-slot__title">Reverso <span class="id-slot__opt">(opcional)</span></p>
+            <div class="drop drop--slot" data-drop="id-back" tabindex="0" role="button" aria-label="Elegir la foto del reverso del documento">
+              <svg class="icon icon--lg"><use href="#i-idcard"/></svg>
+              <p class="drop__title">Foto del reverso</p>
+              <p class="drop__sub"><span class="link">Elige o toma una foto</span></p>
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" hidden />
+            </div>
+            <div class="crop" data-id-crop hidden>
+              <div class="crop__stage">
+                <div class="crop__box" tabindex="0" role="group" aria-label="Recorte del reverso. Arrastra para moverlo, usa las esquinas para el tamaño. Con teclado: flechas y más o menos.">
+                  <span class="crop__h" data-h="nw"></span><span class="crop__h" data-h="ne"></span><span class="crop__h" data-h="sw"></span><span class="crop__h" data-h="se"></span>
+                </div>
+              </div>
+            </div>
+            <div class="side__row" data-id-actions hidden>
+              <button class="btn btn--quiet" type="button" data-id-rotate><svg class="icon"><use href="#i-rotate"/></svg>Girar</button>
+              <button class="btn btn--quiet" type="button" data-id-remove><svg class="icon"><use href="#i-trash"/></svg>Quitar</button>
+            </div>
+          </div>
+        </div>
+
+        <p class="grid-hint">Ajusta el recuadro al borde del documento. Vista previa de la hoja:</p>
+        <div class="id-preview" data-id-preview></div>
+        <p class="id-preview__note" data-id-preview-note></p>
+      </div>
+
+      <aside class="side" aria-label="Opciones de ampliación">
+        <fieldset class="modes">
+          <legend class="field__label">Documento</legend>
+          <label class="mode">
+            <input type="radio" name="idDoc" value="card" checked />
+            <span class="mode__body"><span class="mode__name">Cédula o tarjeta</span><span class="mode__desc">Cédula, tarjeta de identidad, licencia (8,6 × 5,4 cm)</span></span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="idDoc" value="passport" />
+            <span class="mode__body"><span class="mode__name">Pasaporte</span><span class="mode__desc">Página de datos (12,5 × 8,8 cm)</span></span>
+          </label>
+        </fieldset>
+
+        <fieldset class="modes modes--grid modes--3">
+          <legend class="field__label">Ampliación</legend>
+          <label class="mode"><input type="radio" name="idScale" value="100" /><span class="mode__body"><span class="mode__name">100 %</span></span></label>
+          <label class="mode"><input type="radio" name="idScale" value="150" checked /><span class="mode__body"><span class="mode__name">150 %</span></span></label>
+          <label class="mode"><input type="radio" name="idScale" value="200" /><span class="mode__body"><span class="mode__name">200 %</span></span></label>
+        </fieldset>
+
+        <fieldset class="modes modes--grid modes--3">
+          <legend class="field__label">Hoja</legend>
+          <label class="mode"><input type="radio" name="idSheet" value="letter" checked /><span class="mode__body"><span class="mode__name">Carta</span></span></label>
+          <label class="mode"><input type="radio" name="idSheet" value="legal" /><span class="mode__body"><span class="mode__name">Oficio</span></span></label>
+          <label class="mode"><input type="radio" name="idSheet" value="a4" /><span class="mode__body"><span class="mode__name">A4</span></span></label>
+        </fieldset>
+
+        <fieldset class="modes modes--grid">
+          <legend class="field__label">Limpieza</legend>
+          <label class="mode"><input type="radio" name="idClean" value="color" checked /><span class="mode__body"><span class="mode__name">Color</span><span class="mode__desc">Mejorado</span></span></label>
+          <label class="mode"><input type="radio" name="idClean" value="gray" /><span class="mode__body"><span class="mode__name">Grises</span><span class="mode__desc">Más legible</span></span></label>
+          <label class="mode"><input type="radio" name="idClean" value="bw" /><span class="mode__body"><span class="mode__name">Fotocopia</span><span class="mode__desc">Blanco y negro</span></span></label>
+          <label class="mode"><input type="radio" name="idClean" value="none" /><span class="mode__body"><span class="mode__name">Original</span><span class="mode__desc">Sin cambios</span></span></label>
+        </fieldset>
+
+        <fieldset class="modes modes--grid">
+          <legend class="field__label">Descargar como</legend>
+          <label class="mode"><input type="radio" name="idFormat" value="pdf" checked /><span class="mode__body"><span class="mode__name">PDF</span></span></label>
+          <label class="mode"><input type="radio" name="idFormat" value="jpg" /><span class="mode__body"><span class="mode__name">JPG</span></span></label>
+        </fieldset>
+
+        <div class="field">
+          <label class="field__label" for="idName">Nombre del archivo</label>
+          <div class="field__control field__control--suffix">
+            <input id="idName" type="text" value="cedula-ampliada" spellcheck="false" autocomplete="off" />
+            <span data-id-ext>.pdf</span>
+          </div>
+        </div>
+
+        <button class="btn btn--primary" type="button" data-id-go disabled>
+          <svg class="icon"><use href="#i-idcard"/></svg><span data-id-go-label>Crear hoja ampliada</span>
+        </button>
+        <p class="side__hint" data-id-hint>Sube al menos la foto del frente.</p>
+
+        <div class="result" data-id-result hidden>
+          <p class="result__title">Listo</p>
+          <p class="result__meta" data-id-result-meta></p>
+          <a class="btn btn--ink" data-id-download href="#" download><svg class="icon"><use href="#i-download"/></svg>Descargar de nuevo</a>
         </div>
       </aside>
     </section>
@@ -484,10 +789,14 @@
   <script src="js/core/convert.js"></script>
   <script src="js/core/export.js"></script>
   <script src="js/core/signpad.js"></script>
+  <script src="js/core/imaging.js"></script>
   <script src="js/tools/merge.js"></script>
   <script src="js/tools/split.js"></script>
   <script src="js/tools/organize.js"></script>
   <script src="js/tools/sign.js"></script>
+  <script src="js/tools/compress.js"></script>
+  <script src="js/tools/images.js"></script>
+  <script src="js/tools/idcard.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
