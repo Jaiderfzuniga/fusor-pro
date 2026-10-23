@@ -913,8 +913,10 @@
   <script src="js/vendor/pdf-lib.min.js"></script>
   <!-- fflate: leer Word (.docx) y crear .zip / .docx (local) -->
   <script src="js/vendor/fflate.min.js"></script>
-  <!-- pdf.js 4 (local): miniaturas de páginas; si no carga se muestran números -->
-  <script type="module" src="js/core/pdfjs-loader.mjs"></script>
+  <!-- pdf.js 4 «legacy» (local) como script clásico: miniaturas y vistas de páginas,
+       también al abrir con doble clic; si no carga se muestran números -->
+  <script src="js/vendor/pdfjs/pdf.min.js" defer></script>
+  <script src="js/core/pdfjs-loader.js" defer></script>
 
   <script src="js/core/utils.js"></script>
   <script src="js/core/engine.js"></script>

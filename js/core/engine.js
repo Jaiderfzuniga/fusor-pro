@@ -6,9 +6,9 @@
   var PDFLib = window.PDFLib;
   var MAX_BYTES = 200 * 1024 * 1024; // más que esto suele colgar la pestaña en un celular
 
-  // pdf.js llega como módulo (js/core/pdfjs-loader.mjs), después de este script.
+  // pdf.js llega con defer (js/core/pdfjs-loader.js), después de este script.
   var pdfjsReady = new Promise(function(resolve){
-    if(window.pdfjsLib) return resolve(window.pdfjsLib);
+    if(window.fusorPdfjsReady) return resolve(window.pdfjsLib);
     window.addEventListener('fusor:pdfjs-ready', function(){ resolve(window.pdfjsLib); }, { once: true });
     setTimeout(function(){ resolve(window.pdfjsLib || null); }, 8000);
   });
@@ -134,7 +134,13 @@
   function lazyThumb(holder, entry, index, cssWidth){
     holder._paint = function(){
       renderThumb(entry, index, cssWidth).then(function(canvas){
-        if(!canvas || !holder.isConnected) return;
+        if(!holder.isConnected) return;
+        if(!canvas){
+          // sin vista previa: queda el número de página y quien lo use puede avisar
+          holder.dataset.preview = 'none';
+          if(holder._noPaint) holder._noPaint();
+          return;
+        }
         canvas.setAttribute('aria-hidden', 'true');
         var ghost = holder.querySelector('.page__num-ghost, .file__thumb-ink');
         if(ghost) ghost.remove();

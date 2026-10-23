@@ -97,6 +97,10 @@
         var sheet = li.querySelector('.sign-page__sheet');
         sheet.style.setProperty('--ratio', doc.ratios[i] || 0.7071);
         sheet._afterPaint = function(canvas){ canvas.classList.add('sign-page__canvas'); };
+        sheet._noPaint = function(){
+          this.insertAdjacentHTML('beforeend', '<p class="sheet-note">No se pudo mostrar esta página en este navegador. ' +
+            'Actualízalo o usa Chrome, Edge o Firefox recientes. Puedes firmar igual: la firma queda en el mismo lugar del documento.</p>');
+        };
         pagesEl.appendChild(li);
         E.lazyThumb(sheet, doc, i, doc.pageCount > 30 ? 520 : SHEET_W);
       }
