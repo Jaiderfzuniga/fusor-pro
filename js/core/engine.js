@@ -134,7 +134,13 @@
   function lazyThumb(holder, entry, index, cssWidth){
     holder._paint = function(){
       renderThumb(entry, index, cssWidth).then(function(canvas){
-        if(!canvas || !holder.isConnected) return;
+        if(!holder.isConnected) return;
+        if(!canvas){
+          // sin vista previa: queda el número de página y quien lo use puede avisar
+          holder.dataset.preview = 'none';
+          if(holder._noPaint) holder._noPaint();
+          return;
+        }
         canvas.setAttribute('aria-hidden', 'true');
         var ghost = holder.querySelector('.page__num-ghost, .file__thumb-ink');
         if(ghost) ghost.remove();

@@ -36,6 +36,15 @@
 .sign-page__count{font-size:var(--fs-xs);color:var(--ink-3);font-weight:600;}
 
 .sign-layer{position:absolute;inset:0;z-index:1;}
+/* la vista previa no se pudo dibujar (navegador antiguo o sin pdf.js) */
+.sheet-note{
+  position:absolute;left:8%;right:8%;top:8%;
+  padding:var(--s-3) var(--s-4);
+  border:1px dashed var(--rule-strong);border-radius:var(--radius);
+  background:var(--paper);color:var(--ink-2);
+  font-size:var(--fs-sm);line-height:1.4;text-align:center;
+  pointer-events:none;
+}
 
 /* ---------- elemento colocado (firma, texto o fecha) ---------- */
 .placed{

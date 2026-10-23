@@ -70,7 +70,7 @@ fusor-pro/
 │   └── vendor/
 │       ├── pdf-lib.min.js  → librería para leer y crear PDF
 │       ├── fflate.min.js   → leer .docx y crear .zip / .docx (fflate 0.8.2)
-│       └── pdfjs/          → pdf.js 4.10.38 para las miniaturas
+│       └── pdfjs/          → pdf.js 4.10.38 (versión «legacy», funciona también en navegadores anteriores a 2024) para las miniaturas
 ├── tests/                  → pruebas automáticas (ver tests/LEEME.md)
 ├── package.json            → solo para las pruebas; la página no necesita instalar nada
 ├── PRODUCT.md              → para quién es y qué debe cumplir
