@@ -74,6 +74,10 @@
   window.addEventListener('hashchange', fromHash);
   fromHash();
 
+  // Año del pie de página, siempre el actual.
+  var year = document.querySelector('[data-year]');
+  if(year) year.textContent = new Date().getFullYear();
+
   // Evitar que soltar un archivo fuera de la zona lo abra en el navegador.
   window.addEventListener('dragover', function(e){ e.preventDefault(); });
   window.addEventListener('drop', function(e){ e.preventDefault(); });
