@@ -1,6 +1,8 @@
 /* Tokens: papel frío, tinta negra azulada y tres tintas riso planas.
    Las mezclas son el resultado de sobreimprimir (multiply) dos tintas. */
 :root{
+  color-scheme:light;
+
   /* papel */
   --paper:#f4f5f7;
   --paper-2:#e8eaef;
@@ -88,29 +90,28 @@ body[data-tool="idcard"]{
   --ink-a:var(--teal); --ink-b:var(--pink);
 }
 
-/* ---------- modo oscuro: sigue la configuración del sistema ---------- */
-@media (prefers-color-scheme: dark){
-  :root{
-    --paper:#14161f;
-    --paper-2:#1e2130;
-    --paper-3:#2c3042;
-    --sheet:#1b1e2b;
-    --ink:#eceef4;
-    --ink-2:#bcc0ce;
-    --ink-3:#9095a9;
-    --rule:#2f3347;
-    --rule-strong:#4a4f66;
-    --danger:#ff6b7d;
-    --danger-wash:#3b1a22;
-    --ok:#5fd18a;
-    --shadow-sheet:0 1px 2px rgba(0,0,0,.4), 0 6px 18px -8px rgba(0,0,0,.6);
-    --shadow-lift:0 2px 4px rgba(0,0,0,.45), 0 16px 32px -12px rgba(0,0,0,.7);
-  }
-  body[data-tool="merge"]{ --tool-text:#ff7cc6; --tool-wash:rgba(255,72,176,.16); }
-  body[data-tool="split"]{ --tool:#4a6fc4; --tool-text:#93acec; --tool-wash:rgba(74,111,196,.22); }
-  body[data-tool="organize"]{ --tool-text:var(--yellow); --tool-wash:rgba(255,232,0,.12); }
-  body[data-tool="sign"]{ --tool:#5b3bb0; --tool-text:#bba6f2; --tool-wash:rgba(91,59,176,.28); }
-  body[data-tool="compress"]{ --tool-text:#ff8f63; --tool-wash:rgba(255,72,0,.16); }
-  body[data-tool="images"]{ --tool:#4c7d12; --tool-text:#a6d470; --tool-wash:rgba(76,125,18,.25); }
-  body[data-tool="idcard"]{ --tool-text:#4fcbd1; --tool-wash:rgba(0,131,138,.22); }
+/* ---------- modo oscuro (js/core/theme.js pone data-theme en <html>) ---------- */
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#14161f;
+  --paper-2:#1e2130;
+  --paper-3:#2c3042;
+  --sheet:#1b1e2b;
+  --ink:#eceef4;
+  --ink-2:#bcc0ce;
+  --ink-3:#9095a9;
+  --rule:#2f3347;
+  --rule-strong:#4a4f66;
+  --danger:#ff6b7d;
+  --danger-wash:#3b1a22;
+  --ok:#5fd18a;
+  --shadow-sheet:0 1px 2px rgba(0,0,0,.4), 0 6px 18px -8px rgba(0,0,0,.6);
+  --shadow-lift:0 2px 4px rgba(0,0,0,.45), 0 16px 32px -12px rgba(0,0,0,.7);
 }
+[data-theme="dark"] body[data-tool="merge"]{ --tool-text:#ff7cc6; --tool-wash:rgba(255,72,176,.16); }
+[data-theme="dark"] body[data-tool="split"]{ --tool:#4a6fc4; --tool-text:#93acec; --tool-wash:rgba(74,111,196,.22); }
+[data-theme="dark"] body[data-tool="organize"]{ --tool-text:var(--yellow); --tool-wash:rgba(255,232,0,.12); }
+[data-theme="dark"] body[data-tool="sign"]{ --tool:#5b3bb0; --tool-text:#bba6f2; --tool-wash:rgba(91,59,176,.28); }
+[data-theme="dark"] body[data-tool="compress"]{ --tool-text:#ff8f63; --tool-wash:rgba(255,72,0,.16); }
+[data-theme="dark"] body[data-tool="images"]{ --tool:#4c7d12; --tool-text:#a6d470; --tool-wash:rgba(76,125,18,.25); }
+[data-theme="dark"] body[data-tool="idcard"]{ --tool-text:#4fcbd1; --tool-wash:rgba(0,131,138,.22); }

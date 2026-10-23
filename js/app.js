@@ -47,8 +47,6 @@
       panel._enterT = setTimeout(function(){ panel.classList.remove('is-entering'); }, 900);
     }
     current = tab;
-    // en pantallas angostas la barra de pestañas se desplaza hasta la activa
-    if(tab.scrollIntoView && changed) tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     if(focus) tab.focus();
   }
 
