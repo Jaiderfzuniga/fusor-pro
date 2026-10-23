@@ -3,15 +3,18 @@
    real ampliado (100 %, 150 %, 200 %), como piden muchos trámites. */
 (function(F){
   "use strict";
-  var U = F.util, UI = F.ui, IM = F.imaging, CR = F.cropper;
+  var U = F.util, UI = F.ui, IM = F.imaging, CR = F.cropper, X = F.exporter;
   var MM = 72 / 25.4;
   // Cédula, tarjeta de identidad, licencia y la mayoría de carnés usan el
   // tamaño de tarjeta ID-1 (8,56 × 5,4 cm); algunos carnés van de pie.
+  // sides: 1 → solo el frente (el carné no lleva reverso).
   var DOCS = {
-    card:     { w: 85.6, h: 54, label: 'documento' },
-    cardV:    { w: 54, h: 85.6, label: 'carné' },
-    passport: { w: 125, h: 88, label: 'pasaporte' }
+    card:     { w: 85.6, h: 54, label: 'documento', sides: 2 },
+    student:  { w: 85.6, h: 54, label: 'carné', sides: 1 },
+    cardV:    { w: 54, h: 85.6, label: 'carné', sides: 1 },
+    passport: { w: 125, h: 88, label: 'pasaporte', sides: 2 }
   };
+  var FORMATS = { pdf: 'pdf', docx: 'docx', png: 'png', jpg: 'jpg' };
   var SHEETS = {
     letter: { w: 215.9, h: 279.4, label: 'Carta' },
     legal:  { w: 215.9, h: 330.2, label: 'Oficio' },
@@ -64,9 +67,11 @@
       var w = parseFloat(String(customW.value).replace(',', '.')), h = parseFloat(String(customH.value).replace(',', '.'));
       var ok = w >= 1 && w <= 30 && h >= 1 && h <= 30;
       customField.querySelector('.field__control').classList.toggle('is-error', !ok);
-      return ok ? { w: w * 10, h: h * 10, label: 'documento' } : DOCS.card;
+      return ok ? { w: w * 10, h: h * 10, label: 'documento', sides: 2 } : DOCS.card;
     }
     function aspect(){ var d = docSize(); return d.w / d.h; }
+    // Fotos que van en la hoja: el carné lleva solo el frente.
+    function sides(){ return docSize().sides === 1 ? [slots.front] : [slots.front, slots.back]; }
 
     // Foto de trabajo (girada y limitada) y recorte sobre el documento detectado.
     function prepare(s, resetCrop){
@@ -88,7 +93,7 @@
     function layout(){
       var d = docSize(), sheet = SHEETS[opt('idSheet')] || SHEETS.letter;
       var want = +opt('idScale') / 100;
-      var used = [slots.front, slots.back].filter(function(s){ return s.work; });
+      var used = sides().filter(function(s){ return s.work; });
       var n = Math.max(1, used.length);
       var aw = sheet.w - MARGIN * 2, ah = sheet.h - MARGIN * 2;
       // uno debajo del otro o, si así cabe más grande (carnés de pie), lado a lado
@@ -154,7 +159,7 @@
 
     function update(){
       var L = layout(), has = L.items.length > 0;
-      extEl.textContent = '.' + (opt('idFormat') === 'jpg' ? 'jpg' : 'pdf');
+      extEl.textContent = '.' + (FORMATS[opt('idFormat')] || 'pdf');
       go.disabled = !has || busy;
       if(!busy) goLabel.textContent = 'Crear hoja ampliada';
       hint.textContent = !has ? 'Sube al menos la foto del frente.' :
@@ -166,6 +171,7 @@
     // cambiar el tipo de documento cambia la proporción del recorte
     function reshape(){
       customField.hidden = opt('idDoc') !== 'custom';
+      slots.back.el.hidden = docSize().sides === 1;
       [slots.front, slots.back].forEach(function(s){
         if(!s.work) return;
         var box = CR.detect(s.work);
@@ -186,12 +192,14 @@
       busy = true; UI.setBusy(go, true, 'Creando hoja…');
       try{
         await U.sleep(30); // deja pintar el estado ocupado
-        var fmt = opt('idFormat'), base = U.cleanName(nameInput.value, 'documento-ampliado').replace(/\.(pdf|jpe?g)$/i, '');
+        var fmt = opt('idFormat'), base = U.cleanName(nameInput.value, 'documento-ampliado').replace(/\.(pdf|docx|png|jpe?g)$/i, '');
         var blob, name;
-        if(fmt === 'jpg'){
+        if(fmt === 'jpg' || fmt === 'png'){
           var c = pageCanvas(L, 200);
-          blob = new Blob([await IM.jpegBytes(c, 0.9)], { type: 'image/jpeg' });
-          name = base + '.jpg';
+          blob = fmt === 'jpg'
+            ? new Blob([await IM.jpegBytes(c, 0.9)], { type: 'image/jpeg' })
+            : await new Promise(function(r){ c.toBlob(r, 'image/png'); });
+          name = base + '.' + fmt;
         }else{
           var pdf = await PDFLib.PDFDocument.create();
           var page = pdf.addPage([L.sheet.w * MM, L.sheet.h * MM]);
@@ -201,8 +209,14 @@
             page.drawImage(img, { x: it.x * MM, y: (L.sheet.h - it.y - L.h) * MM, width: L.w * MM, height: L.h * MM });
           }
           pdf.setTitle(base);
-          blob = U.pdfBlob(await pdf.save());
-          name = base + '.pdf';
+          var bytes = await pdf.save();
+          if(fmt === 'docx'){
+            // Word: la hoja como imagen a tamaño real, idéntica al PDF
+            var out = await X.docx(bytes, base);
+            blob = out.blob; name = out.name;
+          }else{
+            blob = U.pdfBlob(bytes); name = base + '.pdf';
+          }
         }
         if(lastUrl) URL.revokeObjectURL(lastUrl);
         lastUrl = U.saveBlob(blob, name);
