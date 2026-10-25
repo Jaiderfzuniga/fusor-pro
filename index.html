@@ -57,6 +57,7 @@
       <symbol id="i-compress" viewBox="0 0 24 24"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="m9.5 9 2.5 2.5L14.5 9"/><path d="m9.5 17 2.5-2.5 2.5 2.5"/></symbol>
       <symbol id="i-photos" viewBox="0 0 24 24"><rect x="7.5" y="3.5" width="13" height="13" rx="2"/><path d="M16.5 20.5H6a2.5 2.5 0 0 1-2.5-2.5V7.5"/><circle cx="12" cy="8" r="1.5"/><path d="m20.5 13-3.5-3.5-6 6"/></symbol>
       <symbol id="i-idcard" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M5.5 16c.6-1.5 1.7-2.2 3-2.2s2.4.7 3 2.2"/><path d="M14.5 10h4M14.5 13.5h3"/></symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l1.5-2.5h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></symbol>
       <symbol id="i-portrait" viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M7.5 18.5c.8-2.2 2.5-3.3 4.5-3.3s3.7 1.1 4.5 3.3"/></symbol>
       <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
       <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M20 4v5h-5"/><path d="M19.4 9A8 8 0 1 0 18 17"/></symbol>
@@ -327,7 +328,7 @@
           <p class="work__lede">Sube un PDF, Word o imagen, coloca tu firma donde va y descárgalo firmado en el formato que necesites.</p>
         </div>
 
-        <div class="drop" data-drop="sign" tabindex="0" role="button" aria-label="Elegir un documento para firmar: PDF, Word, imagen o texto">
+        <div class="drop" data-drop="sign" data-camera="environment" tabindex="0" role="button" aria-label="Elegir un documento para firmar: PDF, Word, imagen o texto">
           <svg class="drop__art" viewBox="0 0 148 104" aria-hidden="true">
             <g class="a"><rect x="40" y="6" width="68" height="92" rx="3" fill="var(--blue)" opacity=".55"/></g>
             <g class="s"><path class="sig-stroke" d="M30 74c8-8 14-26 22-26 6 0 1 22 9 22 5 0 8-9 13-9 4 0 4 6 9 6h22"/></g>
@@ -522,7 +523,7 @@
           <p class="work__lede">Junta varias fotos en un solo PDF, una por página. Ideal para documentos escaneados con el celular.</p>
         </div>
 
-        <div class="drop" data-drop="images" tabindex="0" role="button" aria-label="Elegir imágenes para convertir a PDF">
+        <div class="drop" data-drop="images" data-camera="environment" tabindex="0" role="button" aria-label="Elegir imágenes para convertir a PDF">
           <svg class="drop__art" viewBox="0 0 148 104" aria-hidden="true">
             <g class="a"><rect x="26" y="14" width="54" height="72" rx="3" fill="var(--green)" opacity=".6"/></g>
             <g class="b"><rect x="58" y="22" width="64" height="74" rx="3" fill="var(--yellow)"/></g>
@@ -598,10 +599,10 @@
         <div class="id-slots">
           <div class="id-slot" data-id-slot="front">
             <p class="id-slot__title">Frente</p>
-            <div class="drop drop--slot" data-drop="id-front" tabindex="0" role="button" aria-label="Elegir la foto del frente del documento">
+            <div class="drop drop--slot" data-drop="id-front" data-camera="environment" tabindex="0" role="button" aria-label="Elegir la foto del frente del documento">
               <svg class="icon icon--lg"><use href="#i-idcard"/></svg>
               <p class="drop__title">Foto del frente</p>
-              <p class="drop__sub"><span class="link">Elige o toma una foto</span></p>
+              <p class="drop__sub"><span class="link">Elige una foto</span></p>
               <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" hidden />
             </div>
             <div class="crop" data-id-crop hidden>
@@ -618,10 +619,10 @@
           </div>
           <div class="id-slot" data-id-slot="back">
             <p class="id-slot__title">Reverso <span class="id-slot__opt">(opcional)</span></p>
-            <div class="drop drop--slot" data-drop="id-back" tabindex="0" role="button" aria-label="Elegir la foto del reverso del documento">
+            <div class="drop drop--slot" data-drop="id-back" data-camera="environment" tabindex="0" role="button" aria-label="Elegir la foto del reverso del documento">
               <svg class="icon icon--lg"><use href="#i-idcard"/></svg>
               <p class="drop__title">Foto del reverso</p>
-              <p class="drop__sub"><span class="link">Elige o toma una foto</span></p>
+              <p class="drop__sub"><span class="link">Elige una foto</span></p>
               <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" hidden />
             </div>
             <div class="crop" data-id-crop hidden>
@@ -652,11 +653,7 @@
           </label>
           <label class="mode">
             <input type="radio" name="idDoc" value="student" />
-            <span class="mode__body"><span class="mode__name">Carné estudiantil</span><span class="mode__desc">Horizontal, solo el frente (8,6 × 5,4 cm)</span></span>
-          </label>
-          <label class="mode">
-            <input type="radio" name="idDoc" value="cardV" />
-            <span class="mode__body"><span class="mode__name">Carné vertical</span><span class="mode__desc">De pie, solo el frente (5,4 × 8,6 cm)</span></span>
+            <span class="mode__body"><span class="mode__name">Carné estudiantil</span><span class="mode__desc">Solo el frente, horizontal o vertical: se detecta con la foto (8,6 × 5,4 cm)</span></span>
           </label>
           <label class="mode">
             <input type="radio" name="idDoc" value="passport" />
@@ -666,6 +663,11 @@
             <input type="radio" name="idDoc" value="custom" />
             <span class="mode__body"><span class="mode__name">Otro tamaño</span><span class="mode__desc">Mide tu documento con una regla</span></span>
           </label>
+        </fieldset>
+        <fieldset class="modes modes--grid modes--2" data-id-orient>
+          <legend class="field__label">Orientación</legend>
+          <label class="mode"><input type="radio" name="idOrient" value="h" checked /><span class="mode__body"><span class="mode__name"><span class="orient orient--h" aria-hidden="true"></span>Horizontal</span></span></label>
+          <label class="mode"><input type="radio" name="idOrient" value="v" /><span class="mode__body"><span class="mode__name"><span class="orient orient--v" aria-hidden="true"></span>Vertical</span></span></label>
         </fieldset>
         <div class="field" data-id-custom hidden>
           <p class="field__label">Medidas del documento</p>
@@ -734,7 +736,7 @@
           <p class="work__lede">Sube una foto tuya y obtén la foto de 3 × 4 cm (u otro tamaño) lista para subir a un formulario o imprimir varias copias en una hoja.</p>
         </div>
 
-        <div class="drop" data-drop="photo" tabindex="0" role="button" aria-label="Elegir una foto">
+        <div class="drop" data-drop="photo" data-camera="user" tabindex="0" role="button" aria-label="Elegir una foto">
           <svg class="drop__art" viewBox="0 0 148 104" aria-hidden="true">
             <g class="a"><rect x="38" y="8" width="54" height="72" rx="3" fill="var(--red)" opacity=".55"/></g>
             <g class="b"><rect x="58" y="22" width="54" height="72" rx="3" fill="var(--blue)"/></g>
@@ -742,7 +744,7 @@
           </svg>
           <svg class="icon icon--lg"><use href="#i-upload"/></svg>
           <p class="drop__title">Suelta tu foto aquí</p>
-          <p class="drop__sub">o <span class="link">elige o toma una foto</span>: de frente, con fondo claro.</p>
+          <p class="drop__sub">o <span class="link">elige una foto</span>: de frente, con fondo claro.</p>
           <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" hidden />
         </div>
 
@@ -881,7 +883,7 @@
     </div>
 
     <div class="studio__panel" id="studioUpload" role="tabpanel" aria-labelledby="studioTabUpload" hidden>
-      <div class="drop drop--small is-compact" data-studio-drop tabindex="0" role="button" aria-label="Elegir una imagen con tu firma">
+      <div class="drop drop--small is-compact" data-studio-drop data-camera="environment" tabindex="0" role="button" aria-label="Elegir una imagen con tu firma">
         <svg class="icon icon--lg"><use href="#i-image"/></svg>
         <p class="drop__title">Foto o escaneo de tu firma</p>
         <p class="drop__sub">Mejor sobre papel blanco. PNG o JPG.</p>
