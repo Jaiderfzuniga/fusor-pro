@@ -39,8 +39,8 @@ test('Imágenes a PDF: una página por foto, en orden y con giro', async ({ page
 test('Ampliar: detecta la cédula y crea la hoja al 150 %', async ({ page }) => {
   const errores = await abrir(page, 'ampliar');
   const foto = await imagen(page, { ancho: 1600, alto: 1200, dibujo: 'documento' });
-  await page.setInputFiles('[data-id-slot="front"] input[type=file]', archivo('frente.jpg', 'image/jpeg', foto));
-  await page.setInputFiles('[data-id-slot="back"] input[type=file]', archivo('reverso.jpg', 'image/jpeg', foto));
+  await page.setInputFiles('[data-id-slot=\"front\"] [data-drop] input[type=file]', archivo('frente.jpg', 'image/jpeg', foto));
+  await page.setInputFiles('[data-id-slot=\"back\"] [data-drop] input[type=file]', archivo('reverso.jpg', 'image/jpeg', foto));
   await expect(page.locator('[data-id-preview-note]')).toContainText('150 %');
   await expect(page.locator('[data-id-preview-note]')).toContainText('12,8 × 8,1 cm');
 
@@ -59,32 +59,61 @@ test('Ampliar: encuentra el documento aunque ocupe poco de la foto y lo endereza
   await abrir(page, 'ampliar');
   // foto vertical con la tarjeta acostada ocupando ~25 % del alto
   const foto = await imagen(page, { ancho: 1200, alto: 1600, dibujo: 'documento' });
-  await page.setInputFiles('[data-id-slot="front"] input[type=file]', archivo('frente.jpg', 'image/jpeg', foto));
+  await page.setInputFiles('[data-id-slot=\"front\"] [data-drop] input[type=file]', archivo('frente.jpg', 'image/jpeg', foto));
   const caja = page.locator('[data-id-slot="front"] .crop__box');
   await expect.poll(() => caja.evaluate(e => +e.style.getPropertyValue('--w'))).toBeLessThan(0.7);
-  // con «Carné vertical» la foto se gira para que el carné quede de pie
-  await page.check('input[name=idDoc][value=cardV]');
-  await page.setInputFiles('[data-id-slot="front"] input[type=file]', archivo('frente.jpg', 'image/jpeg', foto));
+  // en vertical, la foto se gira para que el documento quede de pie
+  await page.check('input[name=idOrient][value=v]');
+  await page.setInputFiles('[data-id-slot=\"front\"] [data-drop] input[type=file]', archivo('frente.jpg', 'image/jpeg', foto));
   const lienzo = page.locator('[data-id-slot="front"] .crop__stage canvas');
   await expect.poll(() => lienzo.evaluate(c => c.width > c.height)).toBe(true); // 1200×1600 girada 90°
   await expect.poll(() => caja.evaluate(e => +e.style.getPropertyValue('--h'))).toBeLessThan(0.75);
 });
 
-test('Ampliar: carné vertical, otro tamaño y aviso cuando no cabe', async ({ page }) => {
+test('Ampliar: el carné toma la orientación de la foto y se puede cambiar', async ({ page }) => {
+  const errores = await abrir(page, 'ampliar');
+  await page.check('input[name=idDoc][value=student]');
+  const nota = page.locator('[data-id-preview-note]');
+  const lienzo = page.locator('[data-id-slot="front"] .crop__stage canvas');
+
+  // carné de pie → «Vertical» sola, sin girar la foto
+  const dePie = await imagen(page, { ancho: 1200, alto: 1600, dibujo: 'carne-vertical' });
+  await page.setInputFiles('[data-id-slot=\"front\"] [data-drop] input[type=file]', archivo('carne.jpg', 'image/jpeg', dePie));
+  await expect(page.locator('input[name=idOrient][value=v]')).toBeChecked();
+  await expect(nota).toContainText('8,1 × 12,8 cm');
+  await expect.poll(() => lienzo.evaluate(c => c.height > c.width)).toBe(true);
+
+  // carné acostado → «Horizontal» sola
+  const acostado = await imagen(page, { ancho: 1600, alto: 1200, dibujo: 'documento' });
+  await page.setInputFiles('[data-id-slot=\"front\"] [data-drop] input[type=file]', archivo('carne2.jpg', 'image/jpeg', acostado));
+  await expect(page.locator('input[name=idOrient][value=h]')).toBeChecked();
+  await expect(nota).toContainText('12,8 × 8,1 cm');
+
+  // y se puede cambiar a mano: la foto se gira para que quede de pie
+  await page.check('input[name=idOrient][value=v]');
+  await expect(nota).toContainText('8,1 × 12,8 cm');
+  await expect.poll(() => lienzo.evaluate(c => c.height > c.width)).toBe(true);
+  const { bytes } = await descargar(page, '[data-id-go]');
+  expect((await leerPdf(bytes)).getPageCount()).toBe(1);
+  expect(errores).toEqual([]);
+});
+
+test('Ampliar: cédula vertical, otro tamaño y aviso cuando no cabe', async ({ page }) => {
   await abrir(page, 'ampliar');
   const foto = await imagen(page, { ancho: 1600, alto: 1200, dibujo: 'documento' });
-  await page.setInputFiles('[data-id-slot="front"] input[type=file]', archivo('frente.jpg', 'image/jpeg', foto));
-  await page.setInputFiles('[data-id-slot="back"] input[type=file]', archivo('reverso.jpg', 'image/jpeg', foto));
+  await page.setInputFiles('[data-id-slot=\"front\"] [data-drop] input[type=file]', archivo('frente.jpg', 'image/jpeg', foto));
+  await page.setInputFiles('[data-id-slot=\"back\"] [data-drop] input[type=file]', archivo('reverso.jpg', 'image/jpeg', foto));
 
-  await page.check('input[name=idDoc][value=cardV]');
+  await page.check('input[name=idOrient][value=v]');
   await expect(page.locator('[data-id-preview-note]')).toContainText('8,1 × 12,8 cm'); // de pie, al 150 %
-  await expect(page.locator('[data-id-slot="back"]')).toBeHidden();
-  // la foto ya subida (tarjeta acostada) se gira para que el carné quede de pie
+  // las fotos ya subidas (tarjeta acostada) se giran para que queden de pie
   const lienzo = page.locator('[data-id-slot="front"] .crop__stage canvas');
   await expect.poll(() => lienzo.evaluate(c => c.height > c.width)).toBe(true);
+  await page.check('input[name=idOrient][value=h]');
 
   await page.check('input[name=idDoc][value=custom]');
   await expect(page.locator('[data-id-custom]')).toBeVisible();
+  await expect(page.locator('[data-id-orient]')).toBeHidden(); // las medidas ya dicen la orientación
   await page.fill('#idCustomW', '9');
   await page.fill('#idCustomH', '6');
   await expect(page.locator('[data-id-preview-note]')).toContainText('13,5 × 9,0 cm');
@@ -115,11 +144,12 @@ test('Ampliar: el carné estudiantil lleva solo el frente', async ({ page }) => 
   const reverso = page.locator('[data-id-slot="back"]');
   await expect(reverso).toBeVisible(); // la cédula pide frente y reverso
   const foto = await imagen(page, { ancho: 1600, alto: 1200, dibujo: 'documento' });
-  await page.setInputFiles('[data-id-slot="front"] input[type=file]', archivo('frente.jpg', 'image/jpeg', foto));
-  await page.setInputFiles('[data-id-slot="back"] input[type=file]', archivo('reverso.jpg', 'image/jpeg', foto));
+  await page.setInputFiles('[data-id-slot=\"front\"] [data-drop] input[type=file]', archivo('frente.jpg', 'image/jpeg', foto));
+  await page.setInputFiles('[data-id-slot=\"back\"] [data-drop] input[type=file]', archivo('reverso.jpg', 'image/jpeg', foto));
 
-  for(const tipo of ['student', 'cardV']){
-    await page.check('input[name=idDoc][value=' + tipo + ']');
+  await page.check('input[name=idDoc][value=student]');
+  for(const orientacion of ['h', 'v']){
+    await page.check('input[name=idOrient][value=' + orientacion + ']');
     await expect(reverso).toBeHidden();
     const { bytes } = await descargar(page, '[data-id-go]');
     // una sola imagen en la hoja aunque antes se hubiera subido el reverso

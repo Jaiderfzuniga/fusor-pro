@@ -19,6 +19,10 @@
       input.value = '';
     });
 
+    // data-camera="environment" (cámara trasera) o "user" (frontal): botón opcional
+    // «Tomar foto» debajo de la zona. Solo se ve en celulares y tabletas (CSS).
+    if(el.dataset.camera) camera(el, onFiles);
+
     el.addEventListener('dragenter', function(e){ e.preventDefault(); depth++; el.classList.add('is-over'); });
     el.addEventListener('dragover', function(e){ e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
     el.addEventListener('dragleave', function(){ depth = Math.max(0, depth - 1); if(!depth) el.classList.remove('is-over'); });
@@ -26,6 +30,24 @@
       e.preventDefault(); depth = 0; el.classList.remove('is-over');
       if(e.dataTransfer.files.length) onFiles(Array.from(e.dataTransfer.files));
     });
+  }
+
+  function camera(el, onFiles){
+    var cam = document.createElement('input');
+    cam.type = 'file'; cam.accept = 'image/*'; cam.hidden = true;
+    cam.setAttribute('capture', el.dataset.camera);
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn--quiet drop__camera';
+    btn.innerHTML = U.icon('camera') + '<span>Tomar foto con la cámara</span>';
+    btn.addEventListener('click', function(){ cam.click(); });
+    cam.addEventListener('change', function(){
+      if(cam.files.length) onFiles(Array.from(cam.files));
+      cam.value = '';
+    });
+    // va después de la zona (no dentro: un botón dentro de otro botón no es accesible)
+    el.insertAdjacentElement('afterend', btn);
+    btn.insertAdjacentElement('afterend', cam);
   }
 
   // Separa PDF de otros archivos y avisa de los descartados.

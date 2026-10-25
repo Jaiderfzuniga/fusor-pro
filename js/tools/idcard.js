@@ -6,12 +6,11 @@
   var U = F.util, UI = F.ui, IM = F.imaging, CR = F.cropper, X = F.exporter;
   var MM = 72 / 25.4;
   // Cédula, tarjeta de identidad, licencia y la mayoría de carnés usan el
-  // tamaño de tarjeta ID-1 (8,56 × 5,4 cm); algunos carnés van de pie.
-  // sides: 1 → solo el frente (el carné no lleva reverso).
+  // tamaño de tarjeta ID-1 (8,56 × 5,4 cm). Medidas en horizontal: «Vertical»
+  // las intercambia. sides: 1 → solo el frente (el carné no lleva reverso).
   var DOCS = {
     card:     { w: 85.6, h: 54, label: 'documento', sides: 2 },
-    student:  { w: 85.6, h: 54, label: 'carné', sides: 1 },
-    cardV:    { w: 54, h: 85.6, label: 'carné', sides: 1 },
+    student:  { w: 85.6, h: 54, label: 'carné', sides: 1, autoOrient: true },
     passport: { w: 125, h: 88, label: 'pasaporte', sides: 2 }
   };
   var FORMATS = { pdf: 'pdf', docx: 'docx', png: 'png', jpg: 'jpg' };
@@ -30,6 +29,7 @@
     var go = $('[data-id-go]'), goLabel = $('[data-id-go-label]'), hint = $('[data-id-hint]');
     var result = $('[data-id-result]'), resultMeta = $('[data-id-result-meta]'), again = $('[data-id-download]');
     var customField = $('[data-id-custom]'), customW = $('#idCustomW'), customH = $('#idCustomH');
+    var orientField = $('[data-id-orient]');
     var busy = false, lastUrl = null, previewT = null;
 
     var slots = {};
@@ -43,6 +43,11 @@
           var bmp = await IM.load(f);
           if(s.bitmap && s.bitmap.close) s.bitmap.close();
           s.bitmap = bmp; s.rotate = 0;
+          // carnés: los hay de pie y acostados; la orientación se toma de la foto
+          if(docSize().autoOrient && s.key === 'front'){
+            var box = CR.detect(IM.draw(bmp, 0, 600));
+            if(box) setOrient(box.h > box.w * 1.15 ? 'v' : 'h');
+          }
           prepare(s, true);
           orient(s);
         }catch(err){ UI.toast(f.name + ': ' + err.message, 'error'); }
@@ -60,13 +65,17 @@
 
     // Medidas del documento elegido; «Otro tamaño» toma las de los campos (en cm).
     function docSize(){
-      if(opt('idDoc') !== 'custom') return DOCS[opt('idDoc')] || DOCS.card;
+      if(opt('idDoc') !== 'custom'){
+        var d = DOCS[opt('idDoc')] || DOCS.card;
+        return opt('idOrient') === 'v' ? Object.assign({}, d, { w: d.h, h: d.w }) : d;
+      }
       var w = parseFloat(String(customW.value).replace(',', '.')), h = parseFloat(String(customH.value).replace(',', '.'));
       var ok = w >= 1 && w <= 30 && h >= 1 && h <= 30;
       customField.querySelector('.field__control').classList.toggle('is-error', !ok);
       return ok ? { w: w * 10, h: h * 10, label: 'documento', sides: 2 } : DOCS.card;
     }
     function aspect(){ var d = docSize(); return d.w / d.h; }
+    function setOrient(v){ var r = root.querySelector('input[name=idOrient][value=' + v + ']'); if(r) r.checked = true; }
     // Fotos que van en la hoja: el carné lleva solo el frente.
     function sides(){ return docSize().sides === 1 ? [slots.front] : [slots.front, slots.back]; }
 
@@ -178,6 +187,7 @@
     // cambiar el tipo de documento cambia la proporción del recorte
     function reshape(){
       customField.hidden = opt('idDoc') !== 'custom';
+      orientField.hidden = opt('idDoc') === 'custom'; // con medidas propias, la orientación ya va en ellas
       slots.back.el.hidden = docSize().sides === 1;
       [slots.front, slots.back].forEach(function(s){
         if(!s.work || orient(s)) return;
@@ -187,7 +197,18 @@
       });
       schedule();
     }
-    root.querySelectorAll('input[name=idDoc]').forEach(function(r){ r.addEventListener('change', reshape); });
+    root.querySelectorAll('input[name=idDoc]').forEach(function(r){
+      r.addEventListener('change', function(){
+        // al pasar a carné con la foto ya subida, la orientación sale de la foto
+        if(docSize().autoOrient && slots.front.work){
+          var box = CR.detect(IM.draw(slots.front.bitmap, 0, 600));
+          if(box) setOrient(box.h > box.w * 1.15 ? 'v' : 'h');
+          slots.front.rotate = 0; prepare(slots.front, true);
+        }
+        reshape();
+      });
+    });
+    root.querySelectorAll('input[name=idOrient]').forEach(function(r){ r.addEventListener('change', reshape); });
     [customW, customH].forEach(function(i){ i.addEventListener('input', reshape); });
     root.querySelectorAll('input[name=idScale], input[name=idSheet], input[name=idClean], input[name=idFormat]').forEach(function(r){
       r.addEventListener('change', schedule);

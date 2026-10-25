@@ -70,7 +70,7 @@ async function pngDesdeRGB(rgb, w, h){
 }
 
 // Imagen dibujada en el navegador (JPG o PNG). dibujo: 'documento' (tarjeta sobre una mesa),
-// 'retrato' (cara sobre fondo claro) o 'liso'.
+// 'carne-vertical' (carné de pie), 'retrato' (cara sobre fondo claro) o 'liso'.
 async function imagen(page, { ancho = 1200, alto = 900, dibujo = 'liso', tipo = 'image/jpeg' } = {}){
   const datos = await page.evaluate(async ({ ancho, alto, dibujo, tipo }) => {
     const c = document.createElement('canvas'); c.width = ancho; c.height = alto;
@@ -81,6 +81,12 @@ async function imagen(page, { ancho = 1200, alto = 900, dibujo = 'liso', tipo = 
       x.fillStyle = '#f3e6aa'; x.fillRect(l, t, w, h);
       x.fillStyle = '#9aa0b0'; x.fillRect(l + w * 0.05, t + h * 0.12, w * 0.28, h * 0.7);
       x.fillStyle = '#333a4d'; for(let i = 0; i < 5; i++) x.fillRect(l + w * 0.4, t + h * (0.18 + i * 0.13), w * 0.5, h * 0.05);
+    }else if(dibujo === 'carne-vertical'){
+      x.fillStyle = '#5a6b4a'; x.fillRect(0, 0, ancho, alto);
+      const h = alto * 0.55, w = h / 1.585, l = (ancho - w) / 2, t = (alto - h) / 2;
+      x.fillStyle = '#e8eef8'; x.fillRect(l, t, w, h);
+      x.fillStyle = '#9aa0b0'; x.fillRect(l + w * 0.25, t + h * 0.08, w * 0.5, h * 0.35);
+      x.fillStyle = '#333a4d'; for(let i = 0; i < 4; i++) x.fillRect(l + w * 0.12, t + h * (0.55 + i * 0.1), w * 0.76, h * 0.04);
     }else if(dibujo === 'retrato'){
       x.fillStyle = '#eef1f6'; x.fillRect(0, 0, ancho, alto);
       x.fillStyle = '#c99b7a'; x.beginPath(); x.ellipse(ancho / 2, alto * 0.4, ancho * 0.16, alto * 0.16, 0, 0, Math.PI * 2); x.fill();
