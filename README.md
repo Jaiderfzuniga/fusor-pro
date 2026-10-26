@@ -28,6 +28,7 @@ Modo claro u oscuro: el botón junto al logo (luna / sol) cambia el tema y lo re
 - **Firmas:** se dibujan con ratón, dedo o lápiz (sigue la presión), se escriben con tres estilos manuscritos o se suben como foto (quita el fondo blanco). Se guardan solo en el navegador (`localStorage`) y se pueden borrar.
 - **Colocar:** arrastra la firma desde el panel hasta la página, o toca una página y luego la firma. Con teclado: flechas para mover (Mayús = más rápido), `+`/`-` para el tamaño, Suprimir para quitar.
 - **Formularios PDF:** si el PDF tiene campos (texto, casillas, listas), aparecen arriba para rellenarlos. Al descargar se aplanan (quedan impresos) salvo que se marque «Dejar el formulario editable».
+- **Firma o sello ya hecho:** «Subir firma o sello» acepta una imagen (PNG, JPG, WEBP, GIF, BMP, SVG) o un PDF; se quita el fondo del papel conservando el color de la tinta, se guarda en «Tus firmas» y se coloca en la página. También se puede soltar la imagen directamente sobre la página.
 - **Sellos e iniciales:** ✓, ✗ e iniciales manuscritas, que se colocan y mueven como las firmas.
 - **Deshacer:** Ctrl+Z / Ctrl+Y (Cmd en Mac) o los botones junto al nombre del documento.
 - **Descargar:** PDF (las firmas se integran en el documento original, respetando páginas giradas); Word (`.docx` con cada página como imagen, idéntico al original); PNG o JPG (una imagen por página; con varias páginas, en un `.zip`).

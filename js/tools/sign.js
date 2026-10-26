@@ -486,6 +486,51 @@
       }
     }
 
+    // ---------- firma o sello ya hecho ----------
+    // Se guarda en «Tus firmas» y, si hay documento, se coloca en (cx, cy) de la
+    // página indicada o, sin posición, en la página elegida.
+    async function importSignature(file, page, cx, cy){
+      try{
+        var sig = SIG.library.add(await SIG.fromFile(file), true);
+        if(!doc){ UI.toast('Firma guardada. Sube un documento para colocarla.'); return; }
+        if(page === undefined) addToCurrent(sig, 'sig');
+        else{ setCurrent(page); add(sig, 'sig', page, cx, cy); }
+      }catch(err){
+        UI.toast(file.name + ': ' + (err && err.message ? err.message : 'no se pudo leer.'), 'error');
+      }
+    }
+    var uploadInput = $('[data-sign-upload-input]');
+    $('[data-sign-upload]').addEventListener('click', function(){ uploadInput.click(); });
+    uploadInput.addEventListener('change', function(){
+      var f = uploadInput.files[0];
+      uploadInput.value = '';
+      if(f) importSignature(f);
+    });
+
+    // soltar una imagen de firma o sello directamente sobre una página
+    function fileDrag(e){ return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0; }
+    function clearFileOver(){ pagesEl.querySelectorAll('.is-file-over').forEach(function(n){ n.classList.remove('is-file-over'); }); }
+    pagesEl.addEventListener('dragover', function(e){
+      if(!doc || !fileDrag(e)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      var sheet = e.target.closest('.sign-page__sheet');
+      clearFileOver();
+      if(sheet) sheet.classList.add('is-file-over');
+    });
+    pagesEl.addEventListener('dragleave', function(e){ if(!pagesEl.contains(e.relatedTarget)) clearFileOver(); });
+    pagesEl.addEventListener('drop', function(e){
+      if(!doc || !fileDrag(e)) return;
+      e.preventDefault();
+      clearFileOver();
+      var sheet = e.target.closest('.sign-page__sheet');
+      var f = Array.from(e.dataTransfer.files).find(SIG.isSignatureFile);
+      if(!f){ UI.toast('Suelta una imagen (PNG, JPG, SVG…) o un PDF con la firma.', 'error'); return; }
+      if(!sheet){ importSignature(f); return; }
+      var r = sheet.getBoundingClientRect();
+      importSignature(f, +sheet.parentNode.dataset.index, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
+    });
+
     $('[data-sign-create]').addEventListener('click', function(){
       SIG.open(function(sig){ if(doc) addToCurrent(sig, 'sig'); else UI.toast('Firma lista. Sube un documento para colocarla.'); });
     });
