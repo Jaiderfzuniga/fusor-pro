@@ -70,7 +70,8 @@ async function pngDesdeRGB(rgb, w, h){
 }
 
 // Imagen dibujada en el navegador (JPG o PNG). dibujo: 'documento' (tarjeta sobre una mesa),
-// 'carne-vertical' (carné de pie), 'retrato' (cara sobre fondo claro) o 'liso'.
+// 'carne-vertical' (carné de pie), 'firma' (trazo azul sobre papel), 'firma-transparente',
+// 'retrato' (cara sobre fondo claro) o 'liso'.
 async function imagen(page, { ancho = 1200, alto = 900, dibujo = 'liso', tipo = 'image/jpeg' } = {}){
   const datos = await page.evaluate(async ({ ancho, alto, dibujo, tipo }) => {
     const c = document.createElement('canvas'); c.width = ancho; c.height = alto;
@@ -87,6 +88,14 @@ async function imagen(page, { ancho = 1200, alto = 900, dibujo = 'liso', tipo = 
       x.fillStyle = '#e8eef8'; x.fillRect(l, t, w, h);
       x.fillStyle = '#9aa0b0'; x.fillRect(l + w * 0.25, t + h * 0.08, w * 0.5, h * 0.35);
       x.fillStyle = '#333a4d'; for(let i = 0; i < 4; i++) x.fillRect(l + w * 0.12, t + h * (0.55 + i * 0.1), w * 0.76, h * 0.04);
+    }else if(dibujo === 'firma' || dibujo === 'firma-transparente'){
+      // trazo azul sobre papel algo gris (como una foto) o sobre fondo transparente
+      if(dibujo === 'firma'){ x.fillStyle = '#e9e6de'; x.fillRect(0, 0, ancho, alto); }
+      x.strokeStyle = '#1d3f9a'; x.lineWidth = Math.max(4, ancho / 90); x.lineCap = 'round';
+      x.beginPath(); x.moveTo(ancho * 0.1, alto * 0.7);
+      x.bezierCurveTo(ancho * 0.3, alto * 0.1, ancho * 0.4, alto * 0.9, ancho * 0.55, alto * 0.4);
+      x.bezierCurveTo(ancho * 0.65, alto * 0.2, ancho * 0.75, alto * 0.8, ancho * 0.9, alto * 0.35);
+      x.stroke();
     }else if(dibujo === 'retrato'){
       x.fillStyle = '#eef1f6'; x.fillRect(0, 0, ancho, alto);
       x.fillStyle = '#c99b7a'; x.beginPath(); x.ellipse(ancho / 2, alto * 0.4, ancho * 0.16, alto * 0.16, 0, 0, Math.PI * 2); x.fill();

@@ -370,9 +370,13 @@
         <div class="field">
           <p class="field__label">Tus firmas</p>
           <ul class="sigs" data-sign-library aria-label="Firmas disponibles"></ul>
-          <p class="field__help" data-sign-empty>Aún no tienes firmas. Créala dibujando, escribiendo tu nombre o subiendo una foto.</p>
-          <button class="btn btn--ink" type="button" data-sign-create><svg class="icon"><use href="#i-pen"/></svg>Crear firma</button>
-          <p class="field__help">Se guardan solo en este navegador.</p>
+          <p class="field__help" data-sign-empty>Aún no tienes firmas. Créala dibujando o escribiendo tu nombre, o sube una que ya tengas.</p>
+          <div class="sign-add">
+            <button class="btn btn--ink" type="button" data-sign-create><svg class="icon"><use href="#i-pen"/></svg>Crear firma</button>
+            <button class="btn btn--quiet" type="button" data-sign-upload><svg class="icon"><use href="#i-upload"/></svg>Subir firma o sello</button>
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp,image/svg+xml,.svg,application/pdf,.pdf" data-sign-upload-input hidden />
+          </div>
+          <p class="field__help">Sube una imagen (PNG, JPG, SVG…) o un PDF con tu firma o sello: se quita el fondo blanco y queda lista para acomodar. También puedes arrastrar una imagen sobre la página. Se guardan solo en este navegador.</p>
         </div>
 
         <div class="field">

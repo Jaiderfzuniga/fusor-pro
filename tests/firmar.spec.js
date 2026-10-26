@@ -1,6 +1,6 @@
 // Firmar: crear una firma, colocarla, formularios, sellos, deshacer y formatos.
 const { test, expect } = require('@playwright/test');
-const { abrir, descargar, pdf, docx, leerPdf, archivo, esZip, PDFLib, fflate } = require('./ayudas');
+const { abrir, descargar, pdf, docx, leerPdf, archivo, esZip, imagen, PDFLib, fflate } = require('./ayudas');
 
 async function crearFirmaEscrita(page, nombre){
   await page.click('[data-sign-create]');
@@ -21,6 +21,7 @@ async function subir(page, nombre, mime, bytes){
 }
 
 test('dibujar una firma, arrastrarla a la página y descargar el PDF firmado', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' }); // desplazamientos instantáneos: medidas estables
   const errores = await abrir(page, 'firmar');
   await subir(page, 'contrato.pdf', 'application/pdf', await pdf({ paginas: 2 }));
 
@@ -34,17 +35,24 @@ test('dibujar una firma, arrastrarla a la página y descargar el PDF firmado', a
   await expect(page.locator('.placed')).toHaveCount(1); // se coloca sola en la página elegida
   await expect(page.locator('.sig')).toHaveCount(1);    // y queda en la biblioteca
 
-  // arrastrar la firma de la biblioteca a la página (cuando la página dejó de desplazarse)
+  // arrastrar la firma de la biblioteca a la página. Se vuelve arriba (sin animación)
+  // para medir con la página quieta: el punto de destino tiene que caer en la hoja.
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   await quieta(page);
   const hoja = await page.locator('.sign-page__sheet').first().boundingBox();
   const vista = page.viewportSize();
   const destino = { x: hoja.x + hoja.width * 0.3, y: (Math.max(hoja.y, 0) + Math.min(hoja.y + hoja.height, vista.height)) / 2 };
   const firma = await page.locator('.sig__pick').first().boundingBox();
+  const medidas = JSON.stringify({ hoja, firma, destino, vista });
+  expect(destino.y, 'el destino cae en la hoja visible ' + medidas).toBeGreaterThan(Math.max(hoja.y, 0) + 20);
+  expect(destino.y, 'el destino cae en la hoja visible ' + medidas).toBeLessThan(Math.min(hoja.y + hoja.height, vista.height) - 20);
+  const enHoja = await page.evaluate(([x, y]) => !!document.elementsFromPoint(x, y).find(e => e.classList.contains('sign-page__sheet')), [destino.x, destino.y]);
+  expect(enHoja, 'bajo el destino está la hoja ' + medidas).toBe(true);
   await page.mouse.move(firma.x + 20, firma.y + 20); await page.mouse.down();
   await page.mouse.move(firma.x - 80, firma.y + 30, { steps: 4 });
   await page.mouse.move(destino.x, destino.y, { steps: 8 });
   await page.mouse.up();
-  await expect(page.locator('.placed')).toHaveCount(2);
+  await expect(page.locator('.placed'), 'se soltó la firma en la hoja ' + medidas).toHaveCount(2);
 
   const { bytes } = await descargar(page, '[data-sign-go]');
   const doc = await leerPdf(bytes);
@@ -120,4 +128,83 @@ test('las firmas quedan en su sitio en páginas giradas', async ({ page }) => {
   const { bytes } = await descargar(page, '[data-sign-go]');
   const doc = await leerPdf(bytes);
   expect(doc.getPage(0).getRotation().angle).toBe(90);
+});
+
+// Lee un píxel de la imagen colocada: [r, g, b, a].
+function pixel(page, id, fx, fy){
+  return page.locator('.placed').nth(id).locator('img').evaluate(async (img, [fx, fy]) => {
+    await img.decode();
+    const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const x = c.getContext('2d'); x.drawImage(img, 0, 0);
+    return Array.from(x.getImageData(Math.floor(c.width * fx), Math.floor(c.height * fy), 1, 1).data);
+  }, [fx, fy]);
+}
+
+test('subir una firma o sello ya hecho: imagen, PNG transparente y PDF', async ({ page }) => {
+  const errores = await abrir(page, 'firmar');
+  await subir(page, 'contrato.pdf', 'application/pdf', await pdf({ paginas: 1 }));
+  const input = page.locator('[data-sign-upload-input]');
+
+  // foto de una firma en papel: el papel se vuelve transparente y el trazo sigue azul
+  await page.click('[data-sign-upload]');
+  await input.setInputFiles(archivo('firma.jpg', 'image/jpeg', await imagen(page, { ancho: 900, alto: 300, dibujo: 'firma' })));
+  await expect(page.locator('.placed')).toHaveCount(1);
+  await expect(page.locator('.sig')).toHaveCount(1);
+  expect((await pixel(page, 0, 0.01, 0.01))[3]).toBe(0);           // esquina: sin papel
+  const tinta = await page.locator('.placed img').first().evaluate(async img => {
+    await img.decode();
+    const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const x = c.getContext('2d'); x.drawImage(img, 0, 0);
+    const d = x.getImageData(0, 0, c.width, c.height).data;
+    for(let i = 0; i < d.length; i += 4) if(d[i + 3] === 255) return [d[i], d[i + 1], d[i + 2]];
+    return null;
+  });
+  expect(tinta[2]).toBeGreaterThan(tinta[0] + 60);                   // azul, no negro
+
+  // PNG que ya trae fondo transparente
+  await input.setInputFiles(archivo('firma.png', 'image/png', await imagen(page, { ancho: 900, alto: 300, dibujo: 'firma-transparente', tipo: 'image/png' })));
+  await expect(page.locator('.placed')).toHaveCount(2);
+
+  // PDF con la firma
+  const doc = await PDFLib.PDFDocument.create();
+  const p = doc.addPage([300, 120]);
+  p.drawLine({ start: { x: 20, y: 30 }, end: { x: 150, y: 90 }, thickness: 4, color: PDFLib.rgb(0.1, 0.1, 0.3) });
+  p.drawLine({ start: { x: 150, y: 90 }, end: { x: 280, y: 40 }, thickness: 4, color: PDFLib.rgb(0.1, 0.1, 0.3) });
+  await input.setInputFiles(archivo('firma.pdf', 'application/pdf', Buffer.from(await doc.save())));
+  await expect(page.locator('.placed')).toHaveCount(3);
+  await expect(page.locator('.sig')).toHaveCount(3);
+
+  // un archivo que no es firma se rechaza con aviso
+  await input.setInputFiles(archivo('notas.txt', 'text/plain', Buffer.from('hola')));
+  await expect(page.locator('.toast--error')).toBeVisible();
+  await expect(page.locator('.placed')).toHaveCount(3);
+
+  const { bytes } = await descargar(page, '[data-sign-go]');
+  const xobj = (await leerPdf(bytes)).getPage(0).node.Resources().lookup(PDFLib.PDFName.of('XObject'));
+  expect(xobj.keys().length).toBe(3);
+  expect(errores).toEqual([]);
+});
+
+test('soltar una imagen de firma sobre la página la deja donde se suelta', async ({ page }) => {
+  const errores = await abrir(page, 'firmar');
+  await subir(page, 'contrato.pdf', 'application/pdf', await pdf({ paginas: 1 }));
+  const datos = Array.from(await imagen(page, { ancho: 900, alto: 300, dibujo: 'firma', tipo: 'image/png' }));
+  await page.locator('.sign-page__sheet').first().evaluate((hoja, datos) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([new Uint8Array(datos)], 'firma.png', { type: 'image/png' }));
+    const r = hoja.getBoundingClientRect();
+    const opts = { bubbles: true, cancelable: true, dataTransfer: dt, clientX: r.left + r.width * 0.25, clientY: r.top + r.height * 0.4 };
+    hoja.dispatchEvent(new DragEvent('dragover', opts));
+    hoja.dispatchEvent(new DragEvent('drop', opts));
+  }, datos);
+  await expect(page.locator('.placed')).toHaveCount(1);
+  // centrada donde se soltó (25 % del ancho, 40 % del alto)
+  const centro = await page.locator('.placed').evaluate(e => [
+    +e.style.getPropertyValue('--x') + +e.style.getPropertyValue('--w') / 2,
+    e.offsetTop + e.offsetHeight / 2,
+    e.parentNode.offsetHeight
+  ]);
+  expect(centro[0]).toBeCloseTo(0.25, 1);
+  expect(centro[1] / centro[2]).toBeCloseTo(0.4, 1);
+  expect(errores).toEqual([]);
 });

@@ -348,7 +348,80 @@
     return trim(c, 4);
   }
 
-  F.signatures = { library: library, open: open, textImage: textImage };
+  // ---------- firma o sello ya hecho (imagen o PDF) ----------
+  var SIG_TYPES = /^image\/(png|jpeg|webp|gif|bmp|svg\+xml)$|^application\/pdf$/;
+  var SIG_EXT = /\.(png|jpe?g|webp|gif|bmp|svg|pdf)$/i;
+  function isSignatureFile(f){ return SIG_TYPES.test(f.type || '') || SIG_EXT.test(f.name || ''); }
+
+  // SVG: createImageBitmap no siempre lo abre; con <img> sí (blob: está permitido).
+  function loadSvg(file){
+    return new Promise(function(resolve, reject){
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function(){ resolve(img); };
+      img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error('No se pudo abrir el SVG.')); };
+      img.src = url;
+    });
+  }
+
+  // ¿La imagen ya trae fondo transparente? (un PNG de firma suele traerlo)
+  function hasTransparency(d){
+    var n = 0;
+    for(var i = 3; i < d.length; i += 4 * 7) if(d[i] < 250 && ++n > 50) return true;
+    return false;
+  }
+
+  // El papel se vuelve transparente y la tinta conserva su color (sellos azules,
+  // rojos…). El tono del papel se toma de los bordes, por si la foto salió gris.
+  function keyPaper(canvas){
+    var ctx = canvas.getContext('2d', { willReadFrequently: true });
+    var w = canvas.width, h = canvas.height;
+    var img = ctx.getImageData(0, 0, w, h), d = img.data;
+    if(hasTransparency(d)) return;
+    var edge = [], bw = Math.max(1, Math.round(Math.min(w, h) * 0.03)), x, y, i;
+    for(y = 0; y < h; y += 2) for(x = 0; x < w; x += 2){
+      if(x >= bw && x < w - bw && y >= bw && y < h - bw) continue;
+      i = (y * w + x) * 4; edge.push(Math.min(d[i], d[i + 1], d[i + 2]));
+    }
+    edge.sort(function(a, b){ return a - b; });
+    var paper = Math.max(150, edge[Math.floor(edge.length / 2)] || 255);
+    var hi = paper - 18, lo = paper - 85;
+    for(i = 0; i < d.length; i += 4){
+      var v = Math.min(d[i], d[i + 1], d[i + 2]);
+      var a = v >= hi ? 0 : v <= lo ? 255 : Math.round((hi - v) / (hi - lo) * 255);
+      d[i + 3] = Math.round(a * d[i + 3] / 255);
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
+  // Imagen o PDF (primera página) → { src, w, h } listo para colocar.
+  async function fromFile(file){
+    if(!isSignatureFile(file)) throw new Error('Usa una imagen (PNG, JPG, SVG…) o un PDF.');
+    if(file.size > 20 * 1024 * 1024) throw new Error('Es demasiado grande (máximo 20 MB).');
+    var src, c;
+    if(/pdf$/i.test(file.type) || /\.pdf$/i.test(file.name)){
+      var entry = { bytes: new Uint8Array(await file.arrayBuffer()) };
+      try{ c = await F.engine.rasterize(entry, 0, 3); }
+      catch(e){ c = null; }
+      finally{ F.engine.release(entry); }
+      if(!c) throw new Error('No se pudo leer el PDF de la firma.');
+    }else{
+      src = /svg/i.test(file.type) || /\.svg$/i.test(file.name) ? await loadSvg(file) : await F.imaging.load(file);
+      var sw = src.naturalWidth || src.width, sh = src.naturalHeight || src.height;
+      // grande para que se vea nítida; un SVG pequeño se amplía
+      var k = Math.min(1600 / Math.max(sw, sh), /svg/i.test(file.type) ? 8 : 1);
+      c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(sw * k)); c.height = Math.max(1, Math.round(sh * k));
+      c.getContext('2d', { willReadFrequently: true }).drawImage(src, 0, 0, c.width, c.height);
+      if(src.close) src.close();
+      if(src.src && /^blob:/.test(src.src)) URL.revokeObjectURL(src.src);
+    }
+    keyPaper(c);
+    var sig = trim(c, 6);
+    if(!sig) throw new Error('No se encontró ninguna firma: la imagen parece vacía.');
+    return sig;
+  }
+
+  F.signatures = { library: library, open: open, textImage: textImage, fromFile: fromFile, isSignatureFile: isSignatureFile };
   document.addEventListener('DOMContentLoaded', setup);
   if(document.readyState !== 'loading') setup();
 })(window.Fusor);

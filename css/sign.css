@@ -124,6 +124,10 @@
   pointer-events:none;
 }
 
+.sign-add{display:grid;grid-template-columns:1fr;gap:var(--s-2);}
+.sign-add .btn--quiet{padding:10px var(--s-4);font-size:var(--fs-md);}
+.sign-page__sheet.is-file-over{box-shadow:0 0 0 3px var(--tool), var(--shadow-lift);}
+
 .sig-ghost{
   position:fixed;left:0;top:0;z-index:60;
   width:180px;height:auto;
