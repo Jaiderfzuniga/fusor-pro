@@ -21,6 +21,7 @@ async function subir(page, nombre, mime, bytes){
 }
 
 test('dibujar una firma, arrastrarla a la página y descargar el PDF firmado', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' }); // desplazamientos instantáneos: medidas estables
   const errores = await abrir(page, 'firmar');
   await subir(page, 'contrato.pdf', 'application/pdf', await pdf({ paginas: 2 }));
 
@@ -34,17 +35,24 @@ test('dibujar una firma, arrastrarla a la página y descargar el PDF firmado', a
   await expect(page.locator('.placed')).toHaveCount(1); // se coloca sola en la página elegida
   await expect(page.locator('.sig')).toHaveCount(1);    // y queda en la biblioteca
 
-  // arrastrar la firma de la biblioteca a la página (cuando la página dejó de desplazarse)
+  // arrastrar la firma de la biblioteca a la página. Se vuelve arriba (sin animación)
+  // para medir con la página quieta: el punto de destino tiene que caer en la hoja.
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   await quieta(page);
   const hoja = await page.locator('.sign-page__sheet').first().boundingBox();
   const vista = page.viewportSize();
   const destino = { x: hoja.x + hoja.width * 0.3, y: (Math.max(hoja.y, 0) + Math.min(hoja.y + hoja.height, vista.height)) / 2 };
   const firma = await page.locator('.sig__pick').first().boundingBox();
+  const medidas = JSON.stringify({ hoja, firma, destino, vista });
+  expect(destino.y, 'el destino cae en la hoja visible ' + medidas).toBeGreaterThan(Math.max(hoja.y, 0) + 20);
+  expect(destino.y, 'el destino cae en la hoja visible ' + medidas).toBeLessThan(Math.min(hoja.y + hoja.height, vista.height) - 20);
+  const enHoja = await page.evaluate(([x, y]) => !!document.elementsFromPoint(x, y).find(e => e.classList.contains('sign-page__sheet')), [destino.x, destino.y]);
+  expect(enHoja, 'bajo el destino está la hoja ' + medidas).toBe(true);
   await page.mouse.move(firma.x + 20, firma.y + 20); await page.mouse.down();
   await page.mouse.move(firma.x - 80, firma.y + 30, { steps: 4 });
   await page.mouse.move(destino.x, destino.y, { steps: 8 });
   await page.mouse.up();
-  await expect(page.locator('.placed')).toHaveCount(2);
+  await expect(page.locator('.placed'), 'se soltó la firma en la hoja ' + medidas).toHaveCount(2);
 
   const { bytes } = await descargar(page, '[data-sign-go]');
   const doc = await leerPdf(bytes);
