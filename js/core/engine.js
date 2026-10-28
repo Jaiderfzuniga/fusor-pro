@@ -160,14 +160,90 @@
     }
   }
 
+  // ---------- formularios ----------
+  // copyPages copia los campos que se ven en cada página (sus «widgets»), pero no
+  // el formulario del documento (/AcroForm): los campos quedarían visibles pero sin
+  // poder rellenarse. Aquí se vuelve a armar con los campos que quedaron en las
+  // páginas de salida. También repara PDFs a los que ya les pasó.
+  function keepForms(out, sources){
+    var N = PDFLib.PDFName, ctx = out.context;
+    var widgets = {}, roots = [], seenRoot = {};
+    function key(ref){ return ref.toString(); }
+
+    out.getPages().forEach(function(page){
+      var annots = page.node.lookup(N.of('Annots'));
+      if(!(annots instanceof PDFLib.PDFArray)) return;
+      annots.asArray().forEach(function(ref){
+        var a = ctx.lookup(ref);
+        if(!(ref instanceof PDFLib.PDFRef) || !(a instanceof PDFLib.PDFDict) || String(a.get(N.of('Subtype'))) !== '/Widget') return;
+        widgets[key(ref)] = true;
+        // sube por /Parent hasta el campo raíz
+        var r = ref, d = a, guard = 0;
+        while(d.get(N.of('Parent')) instanceof PDFLib.PDFRef && guard++ < 32){ r = d.get(N.of('Parent')); d = ctx.lookup(r); }
+        if(!(d instanceof PDFLib.PDFDict) || !d.get(N.of('T')) || seenRoot[key(r)]) return;
+        seenRoot[key(r)] = true;
+        roots.push({ ref: r, dict: d });
+      });
+    });
+    if(!roots.length) return;
+
+    // Quita de /Kids los widgets de páginas que no quedaron; dice cuántos quedan.
+    function prune(d){
+      var kids = ctx.lookup(d.get(N.of('Kids')));
+      if(!(kids instanceof PDFLib.PDFArray)) return 1; // campo y widget a la vez
+      var left = 0;
+      for(var i = kids.size() - 1; i >= 0; i--){
+        var kref = kids.get(i), k = ctx.lookup(kref);
+        var isWidget = k instanceof PDFLib.PDFDict && String(k.get(N.of('Subtype'))) === '/Widget' && !k.get(N.of('Kids'));
+        var n = isWidget ? (widgets[key(kref)] ? 1 : 0) : (k instanceof PDFLib.PDFDict ? prune(k) : 0);
+        if(n) left += n; else kids.remove(i);
+      }
+      return left;
+    }
+
+    // al unir dos PDF con campos del mismo nombre, los repetidos llevan sufijo
+    var names = {}, fields = [];
+    roots.forEach(function(f){
+      if(!prune(f.dict)) return;
+      var t = f.dict.get(N.of('T')), name = t.decodeText ? t.decodeText() : String(t);
+      if(names[name]){
+        var n = 2;
+        while(names[name + '-' + n]) n++;
+        name = name + '-' + n;
+        f.dict.set(N.of('T'), PDFLib.PDFHexString.fromText(name));
+      }
+      names[name] = true;
+      fields.push(f.ref);
+    });
+    if(!fields.length) return;
+
+    var acro = out.catalog.lookup(N.of('AcroForm'));
+    if(!(acro instanceof PDFLib.PDFDict)){ acro = ctx.obj({}); out.catalog.set(N.of('AcroForm'), ctx.register(acro)); }
+    acro.set(N.of('Fields'), ctx.obj(fields));
+    // fuentes y estilo por defecto del formulario original (para rellenarlo bien)
+    sources.some(function(src){
+      var sa = src.catalog.lookup(N.of('AcroForm'));
+      if(!(sa instanceof PDFLib.PDFDict)) return false;
+      var copier = PDFLib.PDFObjectCopier.for(src.context, ctx);
+      ['DA', 'DR', 'NeedAppearances', 'Q'].forEach(function(k){
+        var v = sa.get(N.of(k));
+        if(v !== undefined && !acro.get(N.of(k))) acro.set(N.of(k), copier.copy(v));
+      });
+      return true;
+    });
+  }
+
   // ---------- escritura ----------
   async function merge(entries){
     var out = await PDFLib.PDFDocument.create();
+    var sources = [];
     for(var i = 0; i < entries.length; i++){
       var src = await PDFLib.PDFDocument.load(entries[i].bytes);
+      sources.push(src);
       var copied = await out.copyPages(src, src.getPageIndices());
       copied.forEach(function(p){ out.addPage(p); });
     }
+    keepForms(out, sources);
     return { bytes: await out.save(), pages: out.getPageCount() };
   }
 
@@ -184,6 +260,7 @@
       }
       out.addPage(page);
     });
+    keepForms(out, [src]);
     return { bytes: await out.save(), pages: out.getPageCount() };
   }
 
