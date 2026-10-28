@@ -603,7 +603,7 @@
         <div class="id-slots">
           <div class="id-slot" data-id-slot="front">
             <p class="id-slot__title">Frente</p>
-            <div class="drop drop--slot" data-drop="id-front" data-camera="environment" tabindex="0" role="button" aria-label="Elegir la foto del frente del documento">
+            <div class="drop drop--slot" data-drop="id-front" data-camera="environment" data-camera-scan tabindex="0" role="button" aria-label="Elegir la foto del frente del documento">
               <svg class="icon icon--lg"><use href="#i-idcard"/></svg>
               <p class="drop__title">Foto del frente</p>
               <p class="drop__sub"><span class="link">Elige una foto</span></p>
@@ -623,7 +623,7 @@
           </div>
           <div class="id-slot" data-id-slot="back">
             <p class="id-slot__title">Reverso <span class="id-slot__opt">(opcional)</span></p>
-            <div class="drop drop--slot" data-drop="id-back" data-camera="environment" tabindex="0" role="button" aria-label="Elegir la foto del reverso del documento">
+            <div class="drop drop--slot" data-drop="id-back" data-camera="environment" data-camera-scan tabindex="0" role="button" aria-label="Elegir la foto del reverso del documento">
               <svg class="icon icon--lg"><use href="#i-idcard"/></svg>
               <p class="drop__title">Foto del reverso</p>
               <p class="drop__sub"><span class="link">Elige una foto</span></p>
@@ -845,6 +845,26 @@
     <p class="foot__copy">© <span data-year>2026</span> FUSOR</p>
   </footer>
 
+  <!-- Escáner de documentos con la cámara (Ampliar) -->
+  <dialog class="scanner" data-scanner aria-labelledby="scanTitle">
+    <div class="scanner__top">
+      <p class="scanner__title" id="scanTitle" data-scan-title>Escanear documento</p>
+      <button class="icon-btn scanner__close" type="button" data-scan-close aria-label="Cerrar la cámara"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="scanner__stage">
+      <video playsinline muted autoplay aria-label="Vista de la cámara"></video>
+      <div class="scanner__frame" data-scan-frame aria-hidden="true"></div>
+      <div class="scanner__found" data-scan-found hidden aria-hidden="true"></div>
+    </div>
+    <div class="scanner__bottom">
+      <p class="scanner__status" data-scan-status role="status" aria-live="polite"></p>
+      <button class="scanner__shot" type="button" data-scan-shot aria-label="Tomar la foto ahora">
+        <span class="scanner__ring" data-scan-ring aria-hidden="true"></span>
+      </button>
+      <p class="scanner__help">Se toma sola cuando el documento está quieto dentro del recuadro. También puedes tocar el botón.</p>
+    </div>
+  </dialog>
+
   <!-- Estudio de firma: dibujar, escribir o subir una imagen -->
   <dialog class="studio" data-studio aria-labelledby="studioTitle">
     <div class="studio__head">
@@ -933,6 +953,7 @@
   <script src="js/core/signpad.js"></script>
   <script src="js/core/imaging.js"></script>
   <script src="js/core/cropper.js"></script>
+  <script src="js/core/scanner.js"></script>
   <script src="js/tools/merge.js"></script>
   <script src="js/tools/split.js"></script>
   <script src="js/tools/organize.js"></script>

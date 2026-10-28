@@ -36,7 +36,18 @@
     root.querySelectorAll('[data-id-slot]').forEach(function(el){
       var key = el.dataset.idSlot;
       var s = slots[key] = { key: key, el: el, bitmap: null, rotate: 0, work: null, crop: null };
-      UI.dropzone(el.querySelector('[data-drop]'), async function(files){
+      var dropEl = el.querySelector('[data-drop]');
+      UI.dropzone(dropEl, handle);
+      // escáner en vivo: el marco tiene la forma del documento elegido
+      dropEl._scan = function(fallback){
+        F.scanner.open({
+          aspect: aspect(),
+          title: 'Escanear el ' + (key === 'front' ? 'frente' : 'reverso') + ' del ' + docSize().label,
+          onCapture: function(file){ handle([file]); },
+          onFail: fallback
+        });
+      };
+      async function handle(files){
         var f = files.find(IM.isImage);
         if(!f){ UI.toast('Elige una foto JPG o PNG del documento.', 'error'); return; }
         try{
@@ -51,7 +62,7 @@
           prepare(s, true);
           orient(s);
         }catch(err){ UI.toast(f.name + ': ' + err.message, 'error'); }
-      });
+      }
       el.querySelector('[data-id-rotate]').addEventListener('click', function(){ if(!s.bitmap) return; s.rotate = (s.rotate + 90) % 360; prepare(s, true); });
       el.querySelector('[data-id-remove]').addEventListener('click', function(){
         if(s.bitmap && s.bitmap.close) s.bitmap.close();

@@ -38,9 +38,15 @@
     cam.setAttribute('capture', el.dataset.camera);
     var btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'btn btn--quiet drop__camera';
-    btn.innerHTML = U.icon('camera') + '<span>Tomar foto con la cámara</span>';
-    btn.addEventListener('click', function(){ cam.click(); });
+    // data-camera-scan: la herramienta abre su escáner en vivo (el._scan); si no
+    // hay cámara disponible, se usa la foto normal del sistema
+    var scan = el.hasAttribute('data-camera-scan');
+    btn.className = 'btn btn--quiet drop__camera' + (scan ? ' drop__camera--scan' : '');
+    btn.innerHTML = U.icon('camera') + '<span>' + (scan ? 'Escanear con la cámara' : 'Tomar foto con la cámara') + '</span>';
+    btn.addEventListener('click', function(){
+      if(scan && el._scan) el._scan(function(){ cam.click(); });
+      else cam.click();
+    });
     cam.addEventListener('change', function(){
       if(cam.files.length) onFiles(Array.from(cam.files));
       cam.value = '';

@@ -134,9 +134,29 @@ async function leerPdf(bytes){
   return PDFLib.PDFDocument.load(bytes);
 }
 
+// Para el escáner: Chrome usa este video como cámara (--use-file-for-fake-video-capture).
+// Video 640×480 en YUV 4:2:0: mesa café y, si se pide, una tarjeta (proporción de cédula) centrada.
+function videoDeTarjeta(conTarjeta = true){
+  const fs = require('fs'), os = require('os'), path = require('path');
+  const W = 640, H = 480, cw = 384, ch = Math.round(384 / 1.585);
+  const x0 = (W - cw) / 2, y0 = (H - ch) / 2;
+  const mesa = [85, 113, 144], tarjeta = [227, 96, 139];
+  const Y = Buffer.alloc(W * H), U = Buffer.alloc(W * H / 4), V = Buffer.alloc(W * H / 4);
+  const dentro = (x, y) => conTarjeta && x >= x0 && x < x0 + cw && y >= y0 && y < y0 + ch;
+  for(let y = 0; y < H; y++) for(let x = 0; x < W; x++) Y[y * W + x] = (dentro(x, y) ? tarjeta : mesa)[0];
+  for(let y = 0; y < H / 2; y++) for(let x = 0; x < W / 2; x++){
+    const c = dentro(x * 2, y * 2) ? tarjeta : mesa;
+    U[y * W / 2 + x] = c[1]; V[y * W / 2 + x] = c[2];
+  }
+  const cuadro = Buffer.concat([Buffer.from('FRAME\n'), Y, U, V]);
+  const archivo = path.join(os.tmpdir(), conTarjeta ? 'fusor-camara-tarjeta.y4m' : 'fusor-camara-mesa.y4m');
+  fs.writeFileSync(archivo, Buffer.concat([Buffer.from(`YUV4MPEG2 W${W} H${H} F15:1 Ip A1:1 C420jpeg\n`)].concat(Array(15).fill(cuadro))));
+  return archivo;
+}
+
 function archivo(nombre, mimeType, buffer){ return { name: nombre, mimeType, buffer }; }
 
 const esJpg = b => b[0] === 0xff && b[1] === 0xd8;
 const esZip = b => b[0] === 0x50 && b[1] === 0x4b;
 
-module.exports = { abrir, descargar, pdf, imagen, docx, leerPdf, archivo, esJpg, esZip, PDFLib, fflate };
+module.exports = { videoDeTarjeta, abrir, descargar, pdf, imagen, docx, leerPdf, archivo, esJpg, esZip, PDFLib, fflate };
