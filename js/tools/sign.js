@@ -718,10 +718,73 @@
       return out;
     }
 
+    // Caja [x0, y0, x1, y1] de un elemento colocado, en el espacio de la página.
+    function itemBox(page, it){
+      var p = placement(page, it), r = p.rotate * Math.PI / 180, c = Math.cos(r), sn = Math.sin(r);
+      var xs = [], ys = [];
+      [[0, 0], [p.width, 0], [0, p.height], [p.width, p.height]].forEach(function(v){
+        xs.push(p.x + v[0] * c - v[1] * sn); ys.push(p.y + v[0] * sn + v[1] * c);
+      });
+      return [Math.min.apply(null, xs), Math.min.apply(null, ys), Math.max.apply(null, xs), Math.max.apply(null, ys)];
+    }
+
+    // Los visores dibujan las anotaciones (campos de formulario, recuadros…) encima
+    // de la página: un campo con fondo blanco bajo la firma la taparía. Las que
+    // quedan debajo de una firma se pasan al dibujo de la página (su aspecto
+    // visible) y se quitan, para que la firma quede encima como en la vista previa.
+    // Pasa sobre todo con campos que quedaron sueltos al organizar o unir el PDF.
+    function flattenUnder(pdf, page, boxes){
+      var N = PDFLib.PDFName, ctx = pdf.context;
+      var annots = page.node.lookup(N.of('Annots'));
+      if(!(annots instanceof PDFLib.PDFArray)) return;
+      var nums = function(v){ var arr = ctx.lookup(v); return arr instanceof PDFLib.PDFArray ? arr.asArray().map(function(x){ return ctx.lookup(x).asNumber(); }) : null; };
+      for(var i = annots.size() - 1; i >= 0; i--){
+        var a = ctx.lookup(annots.get(i));
+        if(!(a instanceof PDFLib.PDFDict)) continue;
+        var sub = String(a.get(N.of('Subtype')));
+        if(sub === '/Link' || sub === '/Popup') continue;
+        var rect = nums(a.get(N.of('Rect')));
+        if(!rect) continue;
+        var rx0 = Math.min(rect[0], rect[2]), ry0 = Math.min(rect[1], rect[3]), rx1 = Math.max(rect[0], rect[2]), ry1 = Math.max(rect[1], rect[3]);
+        var under = boxes.some(function(b){ return b[0] < rx1 && rx0 < b[2] && b[1] < ry1 && ry0 < b[3]; });
+        if(!under) continue;
+        var flags = a.get(N.of('F')) ? ctx.lookup(a.get(N.of('F'))).asNumber() : 0;
+        // aspecto normal (en casillas, el del estado actual)
+        var ap = ctx.lookup(a.get(N.of('AP'))), ref = ap instanceof PDFLib.PDFDict ? ap.get(N.of('N')) : null;
+        var look = ref ? ctx.lookup(ref) : null;
+        if(look instanceof PDFLib.PDFDict){ var st = a.get(N.of('AS')); ref = st ? look.get(st) : null; look = ref ? ctx.lookup(ref) : null; }
+        if(look instanceof PDFLib.PDFStream && !(flags & 2) && !(flags & 32)){
+          if(!(ref instanceof PDFLib.PDFRef)) ref = ctx.register(look);
+          var bb = nums(look.dict.get(N.of('BBox'))) || [0, 0, rx1 - rx0, ry1 - ry0];
+          var m = nums(look.dict.get(N.of('Matrix'))) || [1, 0, 0, 1, 0, 0];
+          // la caja del aspecto, transformada por su Matrix, se ajusta al Rect
+          var cx = [], cy = [];
+          [[bb[0], bb[1]], [bb[2], bb[1]], [bb[0], bb[3]], [bb[2], bb[3]]].forEach(function(q){
+            cx.push(m[0] * q[0] + m[2] * q[1] + m[4]); cy.push(m[1] * q[0] + m[3] * q[1] + m[5]);
+          });
+          var x0 = Math.min.apply(null, cx), y0 = Math.min.apply(null, cy), x1 = Math.max.apply(null, cx), y1 = Math.max.apply(null, cy);
+          var sx = (rx1 - rx0) / ((x1 - x0) || 1), sy = (ry1 - ry0) / ((y1 - y0) || 1);
+          var name = page.node.newXObject('Aplanado', ref);
+          page.pushOperators(
+            PDFLib.pushGraphicsState(),
+            PDFLib.concatTransformationMatrix(sx, 0, 0, sy, rx0 - x0 * sx, ry0 - y0 * sy),
+            PDFLib.drawObject(name),
+            PDFLib.popGraphicsState()
+          );
+        }
+        annots.remove(i);
+      }
+    }
+
     async function signedPdf(){
       var pdf = await PDFLib.PDFDocument.load(doc.bytes);
       fillForm(pdf);
       var pages = pdf.getPages(), cache = {};
+      // primero lo que quedaría encima de las firmas pasa al dibujo de la página
+      pages.forEach(function(page, n){
+        var boxes = items.filter(function(it){ return it.page === n; }).map(function(it){ return itemBox(page, it); });
+        if(boxes.length) flattenUnder(pdf, page, boxes);
+      });
       for(var i = 0; i < items.length; i++){
         var it = items[i];
         if(!cache[it.src]) cache[it.src] = await pdf.embedPng(dataUrlBytes(it.src));

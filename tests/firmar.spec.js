@@ -208,3 +208,43 @@ test('soltar una imagen de firma sobre la página la deja donde se suelta', asyn
   expect(centro[1] / centro[2]).toBeCloseTo(0.4, 1);
   expect(errores).toEqual([]);
 });
+
+test('la firma queda encima de un campo de formulario con fondo blanco', async ({ page }) => {
+  // PDF con un campo de imagen (fondo blanco) que quedó «suelto», como después de
+  // Organizar: se ve, pero el PDF ya no lo lista como formulario
+  const doc = await PDFLib.PDFDocument.create();
+  const pag = doc.addPage([612, 792]);
+  pag.drawText('Firma:', { x: 60, y: 280, size: 12 });
+  doc.getForm().createButton('foto').addToPage('', pag, { x: 60, y: 300, width: 200, height: 60, backgroundColor: PDFLib.rgb(1, 1, 1), borderColor: PDFLib.rgb(0.7, 0.7, 0.7) });
+  doc.catalog.lookup(PDFLib.PDFName.of('AcroForm')).set(PDFLib.PDFName.of('Fields'), doc.context.obj([]));
+  const bytesPdf = Buffer.from(await doc.save());
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const errores = await abrir(page, 'firmar');
+  await subir(page, 'hoja.pdf', 'application/pdf', bytesPdf);
+  await page.locator('[data-sign-upload-input]').setInputFiles(archivo('firma.png', 'image/png', await imagen(page, { ancho: 900, alto: 300, dibujo: 'firma', tipo: 'image/png' })));
+  await expect(page.locator('.placed')).toHaveCount(1);
+
+  // llevar la firma al centro del campo (x = 160/612, y = 1 − 330/792)
+  const hoja = page.locator('.sign-page__sheet').first();
+  await hoja.evaluate(e => e.scrollIntoView({ block: 'center' }));
+  const h = await hoja.boundingBox(), f = await page.locator('.placed').boundingBox();
+  await page.mouse.move(f.x + f.width / 2, f.y + f.height / 2); await page.mouse.down();
+  await page.mouse.move(h.x + h.width * 160 / 612, h.y + h.height * (1 - 330 / 792), { steps: 8 }); await page.mouse.up();
+
+  const { bytes } = await descargar(page, '[data-sign-go]');
+  // se dibuja el PDF descargado y se buscan los trazos azules dentro del campo
+  const azules = await page.evaluate(async (datos) => {
+    const c = await window.Fusor.engine.rasterize({ bytes: new Uint8Array(datos) }, 0, 1);
+    const d = c.getContext('2d').getImageData(70, 792 - 355, 180, 50).data;
+    let n = 0;
+    for(let i = 0; i < d.length; i += 4) if(d[i + 2] > d[i] + 60) n++;
+    return n;
+  }, Array.from(bytes));
+  expect(azules).toBeGreaterThan(50);
+  // el campo que tapaba la firma ya no es una anotación aparte
+  const firmado = await leerPdf(bytes);
+  const annots = firmado.getPage(0).node.lookup(PDFLib.PDFName.of('Annots'));
+  expect(annots ? annots.size() : 0).toBe(0);
+  expect(errores).toEqual([]);
+});
