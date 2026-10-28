@@ -48,24 +48,25 @@ test('el pie muestra el año actual', async ({ page }) => {
 test('en el celular hay un botón para tomar la foto con la cámara', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'el botón solo aparece en pantallas táctiles');
   const { imagen, archivo } = require('./ayudas');
-  await abrir(page, 'ampliar');
-  const boton = page.locator('[data-id-slot="front"] .drop__camera');
+  await abrir(page, 'foto');
+  const boton = page.locator('#tool-photo .drop__camera');
   await expect(boton).toBeVisible();
-  // abre la cámara trasera (capture="environment")
-  await expect(page.locator('[data-id-slot="front"] input[capture="environment"]')).toHaveCount(1);
+  // Foto 3×4 abre la cámara frontal (capture="user")
+  await expect(page.locator('#tool-photo input[capture="user"]')).toHaveCount(1);
   const [selector] = await Promise.all([page.waitForEvent('filechooser'), boton.click()]);
-  await selector.setFiles(archivo('foto.jpg', 'image/jpeg', await imagen(page, { ancho: 1600, alto: 1200, dibujo: 'documento' })));
-  await expect(page.locator('[data-id-slot="front"] [data-id-crop]')).toBeVisible();
+  await selector.setFiles(archivo('yo.jpg', 'image/jpeg', await imagen(page, { ancho: 900, alto: 1200, dibujo: 'retrato' })));
+  await expect(page.locator('[data-ph-crop]')).toBeVisible();
   await expect(boton).toBeHidden(); // con la foto puesta, desaparece junto a la zona
 
-  // en Foto 3×4 usa la cámara frontal
-  await page.click('.tab[data-hash="foto"]');
-  await expect(page.locator('#tool-photo input[capture="user"]')).toHaveCount(1);
-  await expect(page.locator('#tool-photo .drop__camera')).toBeVisible();
+  // Imágenes a PDF usa la cámara trasera
+  await page.click('.tab[data-hash="imagenes"]');
+  await expect(page.locator('#tool-images input[capture="environment"]')).toHaveCount(1);
 });
 
-test('en el computador no aparece el botón de cámara', async ({ page, isMobile }) => {
+test('en el computador solo aparece el escáner de Ampliar, no la foto del sistema', async ({ page, isMobile }) => {
   test.skip(!!isMobile, 'solo en escritorio');
-  await abrir(page, 'ampliar');
-  await expect(page.locator('.drop__camera').first()).toBeHidden();
+  await abrir(page, 'foto');
+  await expect(page.locator('#tool-photo .drop__camera')).toBeHidden();
+  await page.click('.tab[data-hash="ampliar"]');
+  await expect(page.locator('[data-id-slot="front"] .drop__camera--scan')).toBeVisible();
 });

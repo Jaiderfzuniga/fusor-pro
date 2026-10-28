@@ -16,7 +16,7 @@ Herramienta web para trabajar con PDF directamente en el navegador. Ningún arch
 | **Foto 3×4** | Una foto tuya recortada a 3 × 4 cm (o 2,5 × 3, 4 × 5, 5 × 5 cm) con un óvalo guía para la cara. Se descarga como foto JPG a 300 ppp o como hoja Carta con 1, 4, 8 copias (o llena) y guías de corte, en PDF o JPG. |
 | **Ampliar documento** | Fotos del frente y reverso de la cédula (o tarjeta, licencia, pasaporte u otro tamaño medido a mano), o solo el frente del carné estudiantil. Cada documento puede ir en horizontal o vertical; en el carné la orientación se toma de la foto: detecta el documento en la foto, se ajusta el recorte, se limpia (color mejorado, grises o fotocopia) y queda en una hoja Carta, Oficio o A4 a tamaño real ampliado al 100 %, 150 % o 200 %. Se descarga en PDF, Word, PNG o JPG. |
 
-En el celular, Firmar, Imágenes a PDF, Ampliar y Foto 3×4 muestran además un botón opcional **«Tomar foto con la cámara»** (trasera para documentos, frontal para la foto 3×4).
+En el celular, Firmar, Imágenes a PDF y Foto 3×4 muestran además un botón opcional **«Tomar foto con la cámara»** (trasera para documentos, frontal para la foto 3×4). Ampliar tiene **«Escanear con la cámara»** (también con la cámara web del computador): video en vivo con un marco del tamaño del documento; cuando lo detecta dentro del marco, con su forma y quieto un momento, toma la foto solo (también se puede capturar a mano). Funciona mejor con el documento sobre una superficie de otro color y la cámara de frente.
 
 Cada herramienta tiene su propia URL: `#unir`, `#dividir`, `#organizar`, `#firmar`, `#comprimir`, `#imagenes`, `#ampliar`, `#foto`.
 
@@ -59,7 +59,8 @@ fusor-pro/
 │   │   ├── export.js       → PDF → Word, PNG, JPG (.zip)
 │   │   ├── signpad.js      → estudio de firma y firmas guardadas
 │   │   ├── imaging.js      → fotos: orientación, giro, reducción y limpieza
-│   │   └── cropper.js      → recorte con proporción fija y detección del documento
+│   │   ├── cropper.js      → recorte con proporción fija y detección del documento
+│   │   └── scanner.js      → escáner en vivo con la cámara (captura automática)
 │   ├── tools/
 │   │   ├── merge.js        → Unir
 │   │   ├── split.js        → Dividir
