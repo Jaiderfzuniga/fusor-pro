@@ -248,3 +248,141 @@ test('la firma queda encima de un campo de formulario con fondo blanco', async (
   expect(annots ? annots.size() : 0).toBe(0);
   expect(errores).toEqual([]);
 });
+
+// Cuántas imágenes (firmas) tiene cada página del PDF descargado.
+function imagenesPorPagina(doc){
+  return doc.getPages().map(p => {
+    const x = p.node.Resources() && p.node.Resources().lookup(PDFLib.PDFName.of('XObject'));
+    return x ? x.keys().length : 0;
+  });
+}
+
+test('sacar la firma de una foto: quita el fondo y la sombra, la recorta y se ajusta el recuadro', async ({ page }) => {
+  const errores = await abrir(page, 'firmar');
+  await subir(page, 'contrato.pdf', 'application/pdf', await pdf({ paginas: 1 }));
+  await page.click('[data-sign-extract]');
+  await expect(page.locator('#studioTabUpload')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('[data-studio-use]')).toBeDisabled();
+
+  const foto = await imagen(page, { ancho: 1600, alto: 1200, dibujo: 'foto-firma' });
+  await page.setInputFiles('[data-studio-drop] input[type=file]:not([capture])', archivo('foto.jpg', 'image/jpeg', foto));
+  await expect(page.locator('[data-extract]')).toBeVisible();
+  await expect(page.locator('[data-studio-drop]')).toBeHidden();
+
+  // el recuadro automático toma la firma, no el texto impreso de arriba ni la línea de abajo
+  const recuadro = () => page.evaluate(() => {
+    const s = getComputedStyle(document.querySelector('[data-extract-crop]'));
+    const [x, y, w, h] = ['--cx', '--cy', '--cw', '--ch'].map(k => +s.getPropertyValue(k));
+    return { x, y, w, h };
+  });
+  const auto = await recuadro();
+  expect(auto.x).toBeGreaterThan(0.2); expect(auto.x).toBeLessThan(0.32);
+  expect(auto.y).toBeGreaterThan(0.35);                     // debajo del texto (que va hasta ~0,22)
+  expect(auto.y + auto.h).toBeLessThan(0.785);              // sin la línea de firma (en 0,78)
+  expect(auto.x + auto.w).toBeGreaterThan(0.7);
+
+  // «Toda la foto» y «Recortar sola»
+  await page.click('[data-extract-full]');
+  expect(await recuadro()).toEqual({ x: 0, y: 0, w: 1, h: 1 });
+  await page.click('[data-extract-auto]');
+  expect(await recuadro()).toEqual(auto);
+
+  // dibujar un recuadro nuevo con el ratón sobre la foto
+  const st = await page.locator('[data-extract-stage]').boundingBox();
+  await page.mouse.move(st.x + st.width * 0.1, st.y + st.height * 0.05); await page.mouse.down();
+  await page.mouse.move(st.x + st.width * 0.9, st.y + st.height * 0.3, { steps: 5 });
+  await page.mouse.up();
+  const dibujado = await recuadro();
+  expect(dibujado.x).toBeCloseTo(0.1, 1); expect(dibujado.h).toBeCloseTo(0.25, 1);
+  await page.click('[data-extract-auto]');
+
+  // girar cambia la proporción; dos giros más la devuelven
+  await page.click('[data-extract-rotate]');
+  const ar = await page.locator('[data-extract-stage]').evaluate(e => getComputedStyle(e).getPropertyValue('--ar'));
+  expect(+ar).toBeCloseTo(1200 / 1600, 2);
+  for(let i = 0; i < 3; i++) await page.click('[data-extract-rotate]');
+  expect(await recuadro()).toEqual(auto);
+
+  await page.click('[data-studio-use]');
+  await expect(page.locator('.placed')).toHaveCount(1);
+  await expect(page.locator('.sig')).toHaveCount(1);
+  // la firma sacada: alargada, con el fondo transparente y sin manchas en las esquinas
+  const info = await page.locator('.placed img').first().evaluate(async img => {
+    await img.decode();
+    const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const x = c.getContext('2d'); x.drawImage(img, 0, 0);
+    const d = x.getImageData(0, 0, c.width, c.height).data;
+    let tinta = 0, medio = 0;
+    for(let i = 3; i < d.length; i += 4){ if(d[i] === 255) tinta++; else if(d[i] > 0) medio++; }
+    return { w: c.width, h: c.height, tinta: tinta / (d.length / 4), esquinas: [0, c.width - 1, (c.height - 1) * c.width].map(p => d[p * 4 + 3]) };
+  });
+  expect(info.w).toBeGreaterThan(info.h * 2);
+  expect(info.tinta).toBeGreaterThan(0.03); expect(info.tinta).toBeLessThan(0.4);
+  expect(info.esquinas).toEqual([0, 0, 0]);
+
+  // «Quitar foto» vuelve a la zona para elegir otra
+  await page.click('[data-sign-extract]');
+  await page.setInputFiles('[data-studio-drop] input[type=file]:not([capture])', archivo('foto.jpg', 'image/jpeg', foto));
+  await page.click('[data-extract-remove]');
+  await expect(page.locator('[data-studio-drop]')).toBeVisible();
+  await expect(page.locator('[data-studio-use]')).toBeDisabled();
+  await page.click('[data-studio-close] >> nth=0');
+  expect(errores).toEqual([]);
+});
+
+test('copiar una firma en las páginas elegidas, duplicarla y Ctrl+C / Ctrl+V', async ({ page }) => {
+  const errores = await abrir(page, 'firmar');
+  await subir(page, 'contrato.pdf', 'application/pdf', await pdf({ paginas: 5 }));
+  await crearFirmaEscrita(page, 'Ana Ruiz');
+  await expect(page.locator('.placed')).toHaveCount(1);
+  const placed = page.locator('.placed').first();
+
+  // diálogo: rango escrito, botones rápidos y páginas que ya la tienen
+  await placed.locator('[data-act="pages"]').click();
+  const dlg = page.locator('[data-copy]');
+  await expect(dlg).toBeVisible();
+  await expect(dlg.locator('.page-chip.is-own input')).toBeDisabled();
+  await expect(dlg.locator('[data-copy-go]')).toBeDisabled();
+  await dlg.locator('[data-copy-pick="even"]').click();
+  await expect(dlg.locator('#copyRange')).toHaveValue('2, 4');
+  await dlg.locator('#copyRange').fill('3-5');
+  await expect(dlg.locator('.copy__grid input:checked:not(:disabled)')).toHaveCount(3);
+  await expect(dlg.locator('[data-copy-count]')).toContainText('3 copias');
+  await dlg.locator('[data-copy-go]').click();
+  await expect(dlg).toBeHidden();
+  await expect(page.locator('.placed')).toHaveCount(4);
+  // en el mismo lugar que el original
+  const pos = await page.evaluate(() => Array.from(document.querySelectorAll('.placed')).map(n => [n.closest('.sign-page').dataset.index, n.style.getPropertyValue('--x'), n.style.getPropertyValue('--y')]));
+  expect(new Set(pos.map(p => p[1] + '|' + p[2])).size).toBe(1);
+  expect(pos.map(p => p[0]).sort()).toEqual(['0', '2', '3', '4']);
+
+  // volver a copiar en «Todas» no repite donde ya está
+  await placed.locator('[data-act="pages"]').click();
+  await dlg.locator('[data-copy-pick="all"]').click();
+  await expect(dlg.locator('[data-copy-count]')).toContainText('1 copia');
+  await expect(dlg.locator('.page-chip.has-it')).toHaveCount(3);
+  await dlg.locator('[data-copy-go]').click();
+  await expect(page.locator('.placed')).toHaveCount(5);
+
+  // deshacer quita la copia de una vez
+  await page.keyboard.press('Control+z');
+  await expect(page.locator('.placed')).toHaveCount(4);
+
+  // duplicar en la misma página: otra igual, corrida para no taparla
+  await placed.click();
+  await placed.locator('[data-act="dup"]').click();
+  await expect(page.locator('.sign-page[data-index="0"] .placed')).toHaveCount(2);
+  const ys = await page.locator('.sign-page[data-index="0"] .placed').evaluateAll(ns => ns.map(n => +n.style.getPropertyValue('--y')));
+  expect(Math.abs(ys[0] - ys[1])).toBeGreaterThan(0.02);
+
+  // Ctrl+C con la firma elegida y Ctrl+V en la página 2
+  await placed.click();
+  await page.keyboard.press('Control+c');
+  await page.locator('.sign-page[data-index="1"] .sign-page__sheet').click({ position: { x: 20, y: 20 } });
+  await page.keyboard.press('Control+v');
+  await expect(page.locator('.sign-page[data-index="1"] .placed')).toHaveCount(1);
+
+  const { bytes } = await descargar(page, '[data-sign-go]');
+  expect(imagenesPorPagina(await leerPdf(bytes))).toEqual([2, 1, 1, 1, 1]); // la página 1 lleva el original y su duplicado
+  expect(errores).toEqual([]);
+});
