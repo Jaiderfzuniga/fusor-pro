@@ -260,3 +260,84 @@ body.is-placing,body.is-placing *{cursor:grabbing !important;}
   .studio[open]{animation:fade .2s ease both;}
   .drop__art .sig-stroke{transition:none;}
 }
+
+/* ---------- sacar la firma de una foto ---------- */
+.extract{display:flex;flex-direction:column;gap:var(--s-3);}
+.extract[hidden]{display:none;}
+.extract__frame{
+  display:grid;place-items:center;
+  padding:var(--s-2);
+  border:1px solid var(--rule);border-radius:var(--radius);
+  background:var(--paper-2);
+}
+/* el escenario toma la proporción de la foto y cabe en 300 px de alto */
+.extract__stage{
+  position:relative;
+  aspect-ratio:var(--ar, 1.5);
+  width:min(100%, calc(300px * var(--ar, 1.5)));
+  touch-action:none;cursor:crosshair;
+  user-select:none;-webkit-user-select:none;
+}
+.extract__img{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;}
+.extract__crop{
+  position:absolute;
+  left:calc(var(--cx, 0) * 100%);top:calc(var(--cy, 0) * 100%);
+  width:calc(var(--cw, 1) * 100%);height:calc(var(--ch, 1) * 100%);
+  outline:2px solid var(--tool);
+  /* lo que queda fuera del recuadro se oscurece */
+  box-shadow:0 0 0 9999px rgba(28,31,43,.5);
+  cursor:move;
+  /* dentro: la firma ya sin fondo, sobre la cuadrícula de transparencia */
+  background-color:#fff;
+  background-image:linear-gradient(45deg, #ececec 25%, transparent 25%, transparent 75%, #ececec 75%),
+                   linear-gradient(45deg, #ececec 25%, transparent 25%, transparent 75%, #ececec 75%);
+  background-size:12px 12px;background-position:0 0, 6px 6px;
+}
+.extract__cut{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;}
+/* mientras se arrastra se ve la foto; al soltar se vuelve a calcular */
+.extract__stage.is-dragging .extract__crop{background:none;}
+.extract__stage.is-dragging .extract__cut{visibility:hidden;}
+.extract__ink{display:flex;align-items:center;gap:var(--s-2);margin:0;font-size:var(--fs-sm);color:var(--ink-2);}
+.extract__ink[hidden]{display:none;}
+.extract__dot{width:14px;height:14px;border-radius:50%;background:var(--dot, #000);box-shadow:0 0 0 1px var(--rule-strong);flex:none;}
+.extract__ink .link-btn{border:none;background:none;padding:0;color:var(--tool-text);font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;}
+.extract__stage{overflow:hidden;}
+.extract__crop:focus-visible{outline:3px solid var(--ink);}
+.extract__handle{
+  position:absolute;width:14px;height:14px;border-radius:50%;
+  background:var(--sheet);border:2px solid var(--tool);
+}
+.extract__handle::after{content:'';position:absolute;inset:-12px;}
+.extract__handle--nw{left:-8px;top:-8px;cursor:nwse-resize;}
+.extract__handle--ne{right:-8px;top:-8px;cursor:nesw-resize;}
+.extract__handle--sw{left:-8px;bottom:-8px;cursor:nesw-resize;}
+.extract__handle--se{right:-8px;bottom:-8px;cursor:nwse-resize;}
+.studio__range[hidden]{display:none;}
+
+/* ---------- copiar en otras páginas ---------- */
+.copy[open]{max-width:520px;}
+.copy__lead{color:var(--ink-2);font-size:var(--fs-sm);line-height:1.45;margin:0;}
+.copy__quick{display:flex;flex-wrap:wrap;gap:var(--s-2);}
+.copy__quick .btn{padding:6px var(--s-3);}
+.copy__grid{
+  list-style:none;margin:0;padding:2px;
+  display:grid;grid-template-columns:repeat(auto-fill, minmax(48px, 1fr));gap:var(--s-2);
+  max-height:240px;overflow:auto;
+}
+.page-chip{
+  position:relative;display:grid;place-items:center;
+  height:56px;border:1px solid var(--rule);border-radius:4px;
+  background:var(--sheet);color:var(--ink-2);
+  font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer;
+  transition:border-color .15s, background-color .15s, color .15s;
+}
+.page-chip input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer;}
+.page-chip:hover{border-color:var(--tool);}
+.page-chip:has(input:checked){background:var(--tool);border-color:var(--tool);color:var(--tool-on);}
+.page-chip:has(input:focus-visible){outline:2px solid var(--ink);outline-offset:2px;}
+.page-chip.is-own{cursor:default;background:var(--paper-2);border-style:dashed;color:var(--ink-3);}
+.page-chip.is-own input{cursor:default;}
+.page-chip.is-own::after{content:'aquí';position:absolute;bottom:3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+.page-chip.has-it::after{content:'';position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--tool);}
+.page-chip.has-it:has(input:checked)::after{background:var(--tool-on);}
+.copy__count{font-size:var(--fs-sm);color:var(--ink-2);font-weight:600;}

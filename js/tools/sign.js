@@ -74,7 +74,7 @@
     function close(){
       if(doc) E.release(doc);
       doc = null; items = []; selectedId = null; pagesEl.innerHTML = ''; hideResult();
-      form = []; past = []; future = []; renderForm();
+      form = []; past = []; future = []; clip = null; renderForm();
     }
     $('[data-sign-close]').addEventListener('click', function(){ if(!busy){ close(); update(); drop.focus(); } });
 
@@ -145,7 +145,8 @@
         el.innerHTML =
           '<img alt="" draggable="false">' +
           '<span class="placed__bar">' +
-            '<button class="placed__btn" type="button" data-act="all" aria-label="Copiar en todas las páginas" title="Copiar en todas las páginas">' + U.icon('copy') + '</button>' +
+            '<button class="placed__btn" type="button" data-act="dup" aria-label="Duplicar en esta página" title="Duplicar en esta página">' + U.icon('copy') + '</button>' +
+            '<button class="placed__btn" type="button" data-act="pages" aria-label="Copiar en otras páginas" title="Copiar en otras páginas">' + U.icon('pages') + '</button>' +
             '<button class="placed__btn placed__btn--danger" type="button" data-act="remove" aria-label="Quitar" title="Quitar">' + U.icon('trash') + '</button>' +
           '</span>' +
           '<span class="placed__resize" data-act="resize" aria-hidden="true"></span>';
@@ -271,25 +272,169 @@
       var sheet = sheetOf(it.page); if(sheet) sheet.focus();
     }
 
-    function copyToAll(id){
-      var src = find(id); if(!src) return;
-      if(doc.pageCount > 1) remember();
-      var added = 0;
-      for(var p = 0; p < doc.pageCount; p++){
-        if(p === src.page) continue;
-        var it = Object.assign({}, src, { id: U.uid(), page: p });
-        clamp(it); items.push(it); place(it); added++;
-      }
-      hideResult(); markCurrent(); update();
-      UI.toast(added ? 'Se copió en ' + U.plural(added, 'página más', 'páginas más') + '.' : 'El documento solo tiene una página.');
+    // ---------- copiar elementos ----------
+    // ¿Ya hay en esa página el mismo elemento en (casi) el mismo lugar?
+    function twinOn(it, page){
+      return items.some(function(o){ return o.page === page && o.src === it.src && Math.abs(o.x - it.x) < 0.01 && Math.abs(o.y - it.y) < 0.01; });
     }
+
+    // Copia en el mismo lugar y del mismo tamaño en las páginas indicadas.
+    function copyToPages(id, pages){
+      var src = find(id); if(!src) return 0;
+      var targets = pages.filter(function(p){ return p !== src.page && p >= 0 && p < doc.pageCount && !twinOn(src, p); });
+      if(!targets.length) return 0;
+      remember();
+      targets.forEach(function(p){
+        var it = Object.assign({}, src, { id: U.uid(), page: p });
+        clamp(it); items.push(it); place(it);
+      });
+      hideResult(); markCurrent(); update();
+      return targets.length;
+    }
+
+    // Otra igual en la página indicada (por defecto la misma), corrida si taparía otra.
+    function duplicate(base, page){
+      var it = Object.assign({}, base, { id: U.uid(), page: page === undefined ? base.page : page });
+      clamp(it);
+      var tries = 0;
+      while(tries++ < 12 && twinOn(it, it.page)){
+        var h = heightOf(it);
+        it.y += h + 0.015;
+        if(it.y + h > 1){ it.y = 0.04 + tries * 0.02; it.x = Math.min(1 - it.w, it.x + 0.03); }
+        clamp(it);
+      }
+      remember();
+      items.push(it); hideResult(); place(it);
+      select(it.id, true); markCurrent(); update();
+      var sheet = sheetOf(it.page);
+      if(sheet && it.page !== base.page) sheet.scrollIntoView({ block: 'nearest', behavior: U.reducedMotion() ? 'auto' : 'smooth' });
+      return it;
+    }
+
+    // Diálogo: elegir en qué páginas va la copia.
+    var copyDlg = document.querySelector('[data-copy]'), copyFor = null;
+    var copyGrid = copyDlg.querySelector('[data-copy-grid]'), copyRange = copyDlg.querySelector('#copyRange');
+    var copyGo = copyDlg.querySelector('[data-copy-go]'), copyCount = copyDlg.querySelector('[data-copy-count]');
+
+    function copyBoxes(){ return Array.from(copyGrid.querySelectorAll('input[type=checkbox]:not(:disabled)')); }
+    function chosenPages(){ return copyBoxes().filter(function(b){ return b.checked; }).map(function(b){ return +b.value; }); }
+
+    // [1,2,3,5] → «1-3, 5»
+    function rangeText(pages){
+      var out = [], i = 0;
+      while(i < pages.length){
+        var a = pages[i], b = a;
+        while(i + 1 < pages.length && pages[i + 1] === b + 1){ b = pages[++i]; }
+        out.push(a === b ? String(a + 1) : (a + 1) + '-' + (b + 1));
+        i++;
+      }
+      return out.join(', ');
+    }
+    // «2-4, 7» → [1,2,3,6]; lo que no se entiende se ignora
+    function parseRange(text){
+      var set = {};
+      String(text).split(/[,;\s]+/).forEach(function(part){
+        var m = /^(\d+)(?:-(\d*))?$/.exec(part.trim());
+        if(!m) return;
+        var a = +m[1], b = m[2] === undefined ? a : m[2] === '' ? doc.pageCount : +m[2];
+        if(a > b){ var t = a; a = b; b = t; }
+        for(var p = Math.max(1, a); p <= Math.min(doc.pageCount, b); p++) set[p - 1] = true;
+      });
+      return Object.keys(set).map(Number).sort(function(x, y){ return x - y; });
+    }
+
+    function paintCopy(fromRange){
+      var pages = chosenPages(), it = find(copyFor), skip = 0;
+      if(it) pages.forEach(function(p){ if(twinOn(it, p)) skip++; });
+      var n = pages.length - skip;
+      copyGo.disabled = n < 1;
+      copyCount.textContent = !pages.length ? 'Elige una o más páginas.' :
+        U.plural(n, 'copia', 'copias') + (skip ? ' · ' + U.plural(skip, 'página ya la tiene', 'páginas ya la tienen') : '');
+      if(!fromRange) copyRange.value = rangeText(pages);
+    }
+
+    function openCopy(id){
+      var it = find(id); if(!it) return;
+      if(doc.pageCount < 2){ UI.toast('El documento solo tiene una página. Usa «Duplicar» para otra igual en la misma página.'); return; }
+      copyFor = id;
+      copyDlg.querySelector('[data-copy-lead]').textContent =
+        (KINDS[it.kind] || 'Elemento') + ' de la página ' + (it.page + 1) + '. Cada copia queda en el mismo lugar y del mismo tamaño; luego puedes moverla.';
+      copyGrid.innerHTML = '';
+      for(var p = 0; p < doc.pageCount; p++){
+        var li = document.createElement('li'), own = p === it.page, has = !own && twinOn(it, p);
+        li.innerHTML = '<label class="page-chip' + (own ? ' is-own' : '') + (has ? ' has-it' : '') + '" title="' +
+          (own ? 'Aquí está el original' : has ? 'Ya tiene esta copia' : 'Página ' + (p + 1)) + '">' +
+          '<input type="checkbox" value="' + p + '"' + (own ? ' disabled checked' : '') + '>' +
+          '<span>' + (p + 1) + '</span></label>';
+        copyGrid.appendChild(li);
+      }
+      copyRange.value = '';
+      paintCopy();
+      if(typeof copyDlg.showModal === 'function') copyDlg.showModal(); else copyDlg.setAttribute('open', '');
+      var first = copyDlg.querySelector('[data-copy-pick="all"]'); if(first) first.focus();
+    }
+    function closeCopy(){
+      if(copyDlg.open && typeof copyDlg.close === 'function') copyDlg.close(); else copyDlg.removeAttribute('open');
+      var n = copyFor && nodeOf(copyFor); copyFor = null;
+      if(n) n.focus({ preventScroll: true });
+    }
+
+    copyGrid.addEventListener('change', function(){ paintCopy(); });
+    copyRange.addEventListener('input', function(){
+      var want = parseRange(copyRange.value);
+      copyBoxes().forEach(function(b){ b.checked = want.indexOf(+b.value) >= 0; });
+      paintCopy(true);
+    });
+    copyDlg.querySelectorAll('[data-copy-pick]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var how = b.dataset.copyPick, last = doc.pageCount - 1;
+        copyBoxes().forEach(function(box){
+          var p = +box.value;
+          box.checked = how === 'all' || (how === 'odd' && p % 2 === 0) || (how === 'even' && p % 2 === 1) || (how === 'last' && p === last);
+        });
+        paintCopy();
+      });
+    });
+    copyDlg.querySelectorAll('[data-copy-close]').forEach(function(b){ b.addEventListener('click', closeCopy); });
+    copyDlg.addEventListener('cancel', function(e){ e.preventDefault(); closeCopy(); });
+    copyDlg.addEventListener('click', function(e){ if(e.target === copyDlg) closeCopy(); });
+    copyGo.addEventListener('click', function(){
+      var id = copyFor, pages = chosenPages();
+      var n = copyToPages(id, pages);
+      closeCopy();
+      UI.toast(n ? 'Se copió en ' + U.plural(n, 'página', 'páginas') + ': ' + rangeText(pages.filter(function(p){ return p !== (find(id) || {}).page; })) + '.' : 'Esas páginas ya la tenían.');
+    });
+
+    // portapapeles propio: Ctrl+C copia el elemento elegido y Ctrl+V lo pega en la página de destino
+    var clip = null;
+    document.addEventListener('keydown', function(e){
+      if(document.body.dataset.tool !== 'sign' || !doc || busy) return;
+      if(!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
+      var k = e.key.toLowerCase();
+      if(k !== 'c' && k !== 'v') return;
+      var t = e.target;
+      if(t && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName))) return;
+      if(document.querySelector('dialog[open]')) return;
+      if(k === 'c'){
+        var it = selectedId && find(selectedId);
+        var sel = window.getSelection && String(window.getSelection());
+        if(!it || sel) return;
+        e.preventDefault();
+        clip = Object.assign({}, it);
+        UI.toast('Copiado. Elige la página de destino y pulsa Ctrl+V para pegarlo.');
+      }else if(clip){
+        e.preventDefault();
+        duplicate(clip, currentPage);
+      }
+    });
 
     pagesEl.addEventListener('click', function(e){
       var btn = e.target.closest('button[data-act]');
       if(btn){
         var id = btn.closest('.placed').dataset.id;
         if(btn.dataset.act === 'remove') remove(id);
-        else if(btn.dataset.act === 'all') copyToAll(id);
+        else if(btn.dataset.act === 'dup'){ var base = find(id); if(base) duplicate(base); }
+        else if(btn.dataset.act === 'pages') openCopy(id);
         return;
       }
       var sheet = e.target.closest('.sign-page__sheet');
@@ -531,9 +676,9 @@
       importSignature(f, +sheet.parentNode.dataset.index, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
     });
 
-    $('[data-sign-create]').addEventListener('click', function(){
-      SIG.open(function(sig){ if(doc) addToCurrent(sig, 'sig'); else UI.toast('Firma lista. Sube un documento para colocarla.'); });
-    });
+    function studioDone(sig){ if(doc) addToCurrent(sig, 'sig'); else UI.toast('Firma lista. Sube un documento para colocarla.'); }
+    $('[data-sign-create]').addEventListener('click', function(){ SIG.open(studioDone); });
+    $('[data-sign-extract]').addEventListener('click', function(){ SIG.open(studioDone, 'upload'); });
 
     // ---------- texto y fecha ----------
     function addText(text, kind){

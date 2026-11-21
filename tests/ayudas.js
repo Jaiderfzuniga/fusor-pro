@@ -71,6 +71,8 @@ async function pngDesdeRGB(rgb, w, h){
 
 // Imagen dibujada en el navegador (JPG o PNG). dibujo: 'documento' (tarjeta sobre una mesa),
 // 'carne-vertical' (carné de pie), 'firma' (trazo azul sobre papel), 'firma-transparente',
+// 'foto-firma' (foto de una hoja firmada: luz dispareja, sombra, texto impreso arriba y polvo),
+// 'foto-cedula' (cédula sobre una mesa, con fondo de seguridad de colores y la firma encima),
 // 'retrato' (cara sobre fondo claro) o 'liso'.
 async function imagen(page, { ancho = 1200, alto = 900, dibujo = 'liso', tipo = 'image/jpeg' } = {}){
   const datos = await page.evaluate(async ({ ancho, alto, dibujo, tipo }) => {
@@ -95,6 +97,52 @@ async function imagen(page, { ancho = 1200, alto = 900, dibujo = 'liso', tipo = 
       x.beginPath(); x.moveTo(ancho * 0.1, alto * 0.7);
       x.bezierCurveTo(ancho * 0.3, alto * 0.1, ancho * 0.4, alto * 0.9, ancho * 0.55, alto * 0.4);
       x.bezierCurveTo(ancho * 0.65, alto * 0.2, ancho * 0.75, alto * 0.8, ancho * 0.9, alto * 0.35);
+      x.stroke();
+    }else if(dibujo === 'foto-firma'){
+      // papel con luz de arriba a la izquierda y sombra hacia abajo a la derecha
+      const g = x.createLinearGradient(0, 0, ancho, alto);
+      g.addColorStop(0, '#f4f1ea'); g.addColorStop(0.6, '#d9d4c8'); g.addColorStop(1, '#a9a396');
+      x.fillStyle = g; x.fillRect(0, 0, ancho, alto);
+      x.fillStyle = 'rgba(40,30,20,.55)'; x.fillRect(0, 0, ancho * 0.04, alto); // sombra de la mano en el borde
+      // texto impreso arriba (lejos de la firma)
+      x.fillStyle = '#3a3a3a';
+      for(let i = 0; i < 3; i++) x.fillRect(ancho * 0.12, alto * (0.08 + i * 0.06), ancho * 0.7, alto * 0.018);
+      // la firma, en tinta azul, sobre la línea de firma
+      x.strokeStyle = '#22408f'; x.lineWidth = Math.max(4, ancho / 150); x.lineCap = 'round';
+      x.beginPath(); x.moveTo(ancho * 0.3, alto * 0.72);
+      x.bezierCurveTo(ancho * 0.38, alto * 0.42, ancho * 0.45, alto * 0.82, ancho * 0.52, alto * 0.58);
+      x.bezierCurveTo(ancho * 0.58, alto * 0.45, ancho * 0.64, alto * 0.78, ancho * 0.72, alto * 0.55);
+      x.stroke();
+      x.fillStyle = '#555'; x.fillRect(ancho * 0.26, alto * 0.78, ancho * 0.5, Math.max(2, alto * 0.004));
+      // polvo y grano
+      x.fillStyle = '#6a655c';
+      for(let i = 0; i < 160; i++){ const px = (i * 7919 % 997) / 997 * ancho, py = (i * 104729 % 991) / 991 * alto; x.fillRect(px, py, 2, 2); }
+    }else if(dibujo === 'foto-cedula'){
+      x.fillStyle = '#7a5a43'; x.fillRect(0, 0, ancho, alto);                  // mesa
+      const l = ancho * 0.1, t = alto * 0.15, w = ancho * 0.8, h = w / 1.585; // la cédula
+      const g = x.createLinearGradient(l, t, l + w, t + h);
+      g.addColorStop(0, '#f6e7c8'); g.addColorStop(0.5, '#e4eedb'); g.addColorStop(1, '#f2d9e2');
+      x.fillStyle = g; x.fillRect(l, t, w, h);
+      // fondo de seguridad: líneas onduladas de colores por toda la tarjeta
+      x.save(); x.beginPath(); x.rect(l, t, w, h); x.clip();
+      const tonos = ['#d98aa8', '#8fbf8a', '#8aa8d9', '#d9b36a'];
+      for(let k = 0; k < 46; k++){
+        x.strokeStyle = tonos[k % 4]; x.lineWidth = Math.max(1.5, ancho / 700);
+        x.beginPath();
+        for(let px = 0; px <= w; px += 6){
+          const py = t + (k / 45) * h + Math.sin(px / 38 + k * 0.7) * h * 0.035;
+          px ? x.lineTo(l + px, py) : x.moveTo(l, py);
+        }
+        x.stroke();
+      }
+      x.restore();
+      x.fillStyle = '#9aa0b0'; x.fillRect(l + w * 0.05, t + h * 0.15, w * 0.25, h * 0.6);  // foto
+      x.fillStyle = '#22252e'; for(let i = 0; i < 4; i++) x.fillRect(l + w * 0.36, t + h * (0.12 + i * 0.09), w * 0.45, h * 0.035); // datos
+      // la firma, negra, encima del fondo de colores
+      x.strokeStyle = '#15171c'; x.lineWidth = Math.max(3, ancho / 260); x.lineCap = 'round';
+      x.beginPath(); x.moveTo(l + w * 0.4, t + h * 0.86);
+      x.bezierCurveTo(l + w * 0.48, t + h * 0.6, l + w * 0.55, t + h * 0.95, l + w * 0.62, t + h * 0.72);
+      x.bezierCurveTo(l + w * 0.68, t + h * 0.6, l + w * 0.74, t + h * 0.9, l + w * 0.82, t + h * 0.68);
       x.stroke();
     }else if(dibujo === 'retrato'){
       x.fillStyle = '#eef1f6'; x.fillRect(0, 0, ancho, alto);
