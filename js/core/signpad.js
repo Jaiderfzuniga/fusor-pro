@@ -110,7 +110,7 @@
     dlg.addEventListener('click', function(e){ if(e.target === dlg) close(); });
 
     dlg.querySelectorAll('input[name=studioColor]').forEach(function(r){
-      r.addEventListener('change', function(){ color = r.value; redraw(); paintTyped(); if(ex){ tint(); paintUpload(); } });
+      r.addEventListener('change', function(){ color = r.value; redraw(); paintTyped(); rekey(); });
     });
     $('#studioWeight').addEventListener('input', function(e){ weight = +e.target.value; redraw(); });
     $('[data-studio-clear]').addEventListener('click', function(){ strokes = []; redraw(); refresh(); });
@@ -155,22 +155,23 @@
         var bmp = await createImageBitmap(f);
         dropUpload();
         upload = bmp; ex = { rot: 0 };
-        prepare(); autoCrop(); paintUpload(); refresh();
+        prepare(); autoCrop(); key(); paintUpload(); refresh();
       }catch(err){ UI.toast('No se pudo abrir la imagen.', 'error'); }
     });
-    $('#studioKeyBg').addEventListener('change', function(){ if(!ex) return; key(); paintUpload(); });
+    $('#studioKeyBg').addEventListener('change', rekey);
     var sensTimer = 0;
     $('#studioSens').addEventListener('input', function(){
       if(!ex || sensTimer) return;
-      sensTimer = requestAnimationFrame(function(){ sensTimer = 0; key(); paintUpload(); });
+      sensTimer = requestAnimationFrame(function(){ sensTimer = 0; rekey(); });
     });
     $('[data-extract-rotate]').addEventListener('click', function(){
       if(!ex) return;
-      ex.rot = (ex.rot + 1) % 4;
-      prepare(); autoCrop(); paintUpload();
+      ex.rot = (ex.rot + 1) % 4; ex.ink = null;
+      prepare(); autoCrop(); rekey();
     });
-    $('[data-extract-auto]').addEventListener('click', function(){ if(ex){ autoCrop(); paintUpload(); } });
-    $('[data-extract-full]').addEventListener('click', function(){ if(ex){ ex.crop = { x: 0, y: 0, w: 1, h: 1 }; paintCrop(); } });
+    $('[data-extract-auto]').addEventListener('click', function(){ if(ex){ autoCrop(); rekey(); } });
+    $('[data-extract-full]').addEventListener('click', function(){ if(ex){ ex.crop = { x: 0, y: 0, w: 1, h: 1 }; rekey(); } });
+    $('[data-extract-ink-reset]').addEventListener('click', function(){ if(ex){ ex.ink = null; rekey(); } });
     $('[data-extract-remove]').addEventListener('click', function(){ dropUpload(); paintUpload(); refresh(); upDrop.focus(); });
     cropEvents();
 
@@ -248,9 +249,10 @@
 
   // ---------- extraer la firma de una foto ----------
   // La luz de una foto nunca es pareja: el tono del papel se estima por zonas
-  // (lo más claro de cada bloque) y la tinta es lo que queda bastante más oscuro
-  // que el papel de su alrededor. Así se quitan sombras y papel gris o amarillento.
-  var EX_MAX = 2000; // px del lado mayor con que se trabaja
+  // (lo más claro de cada bloque) y se mide cuánto más oscuro es cada punto.
+  // Dentro del recuadro, la tinta es lo más oscuro y de su mismo color; el resto
+  // (papel, sombras, el fondo de colores de una cédula o un carné) se borra.
+  var EX_MAX = 2400; // px del lado mayor con que se trabaja
 
   function dropUpload(){
     if(upload && upload.close) upload.close();
@@ -315,27 +317,86 @@
       }
     }
     ex.contrast = r;
-    key();
+    ex.pix = d;
+    // trazos de toda la foto, solo para el recuadro automático. Primero lo que
+    // resalta mucho (tinta de esfero), para no tomar el fondo de colores de una
+    // cédula; si casi no hay, también lo más claro (lápiz, tinta suave).
+    var a = new Uint8ClampedArray(n), strong = 0;
+    for(i = 0; i < n; i++) if(r[i] > 0.5){ a[i] = 255; strong++; }
+    if(strong < n * 0.0005) for(i = 0; i < n; i++) a[i] = r[i] > 0.2 ? 255 : 0;
+    ex.parts = ex.transparent ? parts(alphaOf(d, n), w, h, 0) : parts(a, w, h, Math.max(6, n * 0.000012));
   }
 
-  // Transparencia según la sensibilidad, sin manchas sueltas, y los trazos que quedan.
-  function key(){
-    var w = ex.w, h = ex.h, n = w * h, a = new Uint8ClampedArray(n), i;
-    var keep = $('#studioKeyBg').checked && !ex.transparent;
-    if(keep){
-      var sens = +$('#studioSens').value;          // 1 (poca) … 10 (mucha)
-      var t = 0.34 - sens * 0.026, lo = t * 0.6, hi = t * 1.5, r = ex.contrast;
-      for(i = 0; i < n; i++){
-        var k = (r[i] - lo) / (hi - lo);
-        a[i] = k <= 0 ? 0 : k >= 1 ? 255 : k * 255;
-      }
-    }else{
-      var d = ex.src.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, w, h).data;
-      for(i = 0; i < n; i++) a[i] = d[i * 4 + 3];
+  function alphaOf(d, n){ var a = new Uint8ClampedArray(n); for(var i = 0; i < n; i++) a[i] = d[i * 4 + 3]; return a; }
+
+  function cropRect(){
+    var cr = ex.crop || { x: 0, y: 0, w: 1, h: 1 };
+    var x = Math.round(cr.x * ex.w), y = Math.round(cr.y * ex.h);
+    return { x: x, y: y, w: Math.max(1, Math.min(ex.w - x, Math.round(cr.w * ex.w))), h: Math.max(1, Math.min(ex.h - y, Math.round(cr.h * ex.h))) };
+  }
+
+  // Color y oscuridad de la tinta: lo tocado por la persona o, si no, lo más
+  // oscuro del recuadro (el 2 % de puntos que más resaltan sobre el fondo).
+  function inkOf(R){
+    if(ex.ink) return ex.ink;
+    var r = ex.contrast, d = ex.pix, w = ex.w, hist = new Uint32Array(256), x, y, i, total = R.w * R.h;
+    for(y = R.y; y < R.y + R.h; y++) for(x = R.x; x < R.x + R.w; x++) hist[Math.min(255, (r[y * w + x] * 255) | 0)]++;
+    var need = Math.max(1, total * 0.02), acc = 0, cut = 255;
+    while(cut > 0 && acc + hist[cut] < need){ acc += hist[cut]; cut--; }
+    var sum = [0, 0, 0], sr = 0, cnt = 0;
+    for(y = R.y; y < R.y + R.h; y++) for(x = R.x; x < R.x + R.w; x++){
+      i = y * w + x;
+      if(r[i] * 255 >= cut){ sum[0] += d[i * 4]; sum[1] += d[i * 4 + 1]; sum[2] += d[i * 4 + 2]; sr += r[i]; cnt++; }
     }
-    ex.alpha = a;
-    ex.parts = parts(a, w, h, keep ? Math.max(6, n * 0.000012) : 0);
-    tint();
+    return { rgb: [sum[0] / cnt, sum[1] / cnt, sum[2] / cnt], r: sr / cnt };
+  }
+
+  // Lo que queda dentro del recuadro: la firma sola, con el color de tinta elegido.
+  function key(){
+    var R = cropRect(), w = ex.w, n = R.w * R.h, c = document.createElement('canvas'), i, x, y;
+    c.width = R.w; c.height = R.h;
+    var ctx = c.getContext('2d', { willReadFrequently: true });
+    var keep = $('#studioKeyBg').checked && !ex.transparent;
+    if(!keep){
+      ctx.drawImage(ex.src, R.x, R.y, R.w, R.h, 0, 0, R.w, R.h);
+      ex.cut = c; return;
+    }
+    var r = ex.contrast, d = ex.pix, ink = inkOf(R);
+    // el fondo: el tono típico del recuadro (la mediana, porque casi todo es fondo)
+    var hist = new Uint32Array(256), ch = [new Uint32Array(256), new Uint32Array(256), new Uint32Array(256)];
+    for(y = R.y; y < R.y + R.h; y++) for(x = R.x; x < R.x + R.w; x++){
+      i = y * w + x;
+      hist[Math.min(255, (r[i] * 255) | 0)]++;
+      ch[0][d[i * 4]]++; ch[1][d[i * 4 + 1]]++; ch[2][d[i * 4 + 2]]++;
+    }
+    function median(hh){ var acc = 0, k = 0; while(k < 255 && acc + hh[k] < n / 2){ acc += hh[k]; k++; } return k; }
+    var bgR = median(hist) / 255, bg = [median(ch[0]), median(ch[1]), median(ch[2])];
+    var spanR = Math.max(0.06, ink.r - bgR);
+    var dist = function(a0, a1, a2){ var p = a0 - ink.rgb[0], q = a1 - ink.rgb[1], s2 = a2 - ink.rgb[2]; return Math.sqrt(p * p + q * q + s2 * s2); };
+    var spanC = Math.max(40, dist(bg[0], bg[1], bg[2]));
+    // un punto es tinta si es tan oscuro como ella Y de su mismo color
+    var sens = +$('#studioSens').value;          // 1 (poca) … 10 (mucha)
+    var t = 0.8 - sens * 0.05, lo = t - 0.12, hi = t + 0.12;
+    var a = new Uint8ClampedArray(n), j = 0;
+    for(y = R.y; y < R.y + R.h; y++) for(x = R.x; x < R.x + R.w; x++, j++){
+      i = y * w + x;
+      var sd = (r[i] - bgR) / spanR, sc = 1 - dist(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]) / spanC;
+      var k = (Math.min(sd, sc) - lo) / (hi - lo);
+      a[j] = k <= 0 ? 0 : k >= 1 ? 255 : k * 255;
+    }
+    parts(a, R.w, R.h, Math.max(4, n * 0.0001)); // fuera el polvo y los restos del fondo
+    var img = ctx.createImageData(R.w, R.h), o = img.data, rgb = hexRgb(color);
+    for(j = 0; j < n; j++){ o[j * 4] = rgb[0]; o[j * 4 + 1] = rgb[1]; o[j * 4 + 2] = rgb[2]; o[j * 4 + 3] = a[j]; }
+    ctx.putImageData(img, 0, 0);
+    ex.cut = c;
+  }
+
+  // Tocar un trazo de la firma fija el color de la tinta (útil sobre fondos de colores).
+  function pickInk(fx, fy){
+    var w = ex.w, cx = Math.round(fx * (w - 1)), cy = Math.round(fy * (ex.h - 1)), best = -1, bi = 0;
+    for(var y = Math.max(0, cy - 3); y <= Math.min(ex.h - 1, cy + 3); y++)
+      for(var x = Math.max(0, cx - 3); x <= Math.min(w - 1, cx + 3); x++){ var i = y * w + x; if(ex.contrast[i] > best){ best = ex.contrast[i]; bi = i; } }
+    ex.ink = { rgb: [ex.pix[bi * 4], ex.pix[bi * 4 + 1], ex.pix[bi * 4 + 2]], r: best };
   }
 
   // Trazos (zonas unidas de tinta). Los muy pequeños (polvo, grano) se borran.
@@ -366,26 +427,14 @@
     return list;
   }
 
-  // Imagen final con el color de tinta elegido.
-  function tint(){
-    var w = ex.w, h = ex.h, c = document.createElement('canvas');
-    c.width = w; c.height = h;
-    var ctx = c.getContext('2d', { willReadFrequently: true });
-    var keyed = $('#studioKeyBg').checked && !ex.transparent;
-    if(!keyed){ ctx.drawImage(ex.src, 0, 0); ex.out = c; return; }
-    var img = ctx.createImageData(w, h), d = img.data, rgb = hexRgb(color), a = ex.alpha;
-    for(var i = 0, o = 0; i < a.length; i++, o += 4){
-      d[o] = rgb[0]; d[o + 1] = rgb[1]; d[o + 2] = rgb[2]; d[o + 3] = a[i];
-    }
-    ctx.putImageData(img, 0, 0);
-    ex.out = c;
-  }
-
   // Recuadro automático: el grupo de trazos más grande, sin lo que toca el borde
   // de la foto (sombras, la orilla del papel o de la mesa).
   function autoCrop(){
     var w = ex.w, h = ex.h, m = Math.max(2, Math.round(Math.min(w, h) * 0.01));
-    var list = ex.parts.filter(function(p){ return p.x0 > m && p.y0 > m && p.x1 < w - 1 - m && p.y1 < h - 1 - m; });
+    // fuera también los marcos grandes: la orilla de una cédula o de la hoja sobre la mesa
+    var list = ex.parts.filter(function(p){
+      return p.x0 > m && p.y0 > m && p.x1 < w - 1 - m && p.y1 < h - 1 - m && !(p.x1 - p.x0 > w * 0.5 && p.y1 - p.y0 > h * 0.5);
+    });
     if(!list.length) list = ex.parts.slice();
     if(!list.length){ ex.crop = { x: 0, y: 0, w: 1, h: 1 }; return; }
     // una firma es un trazo largo y suelto: mucha tinta en una caja casi vacía.
@@ -415,30 +464,38 @@
   }
 
   function uploadCanvas(){
-    if(!ex || !ex.out) return null;
-    var cr = ex.crop || { x: 0, y: 0, w: 1, h: 1 };
-    var x = Math.round(cr.x * ex.w), y = Math.round(cr.y * ex.h);
-    var w = Math.max(1, Math.round(cr.w * ex.w)), h = Math.max(1, Math.round(cr.h * ex.h));
+    if(!ex) return null;
+    if(!ex.cut) key();
     var c = document.createElement('canvas');
-    c.width = w; c.height = h;
-    c.getContext('2d', { willReadFrequently: true }).drawImage(ex.out, x, y, w, h, 0, 0, w, h);
+    c.width = ex.cut.width; c.height = ex.cut.height;
+    c.getContext('2d', { willReadFrequently: true }).drawImage(ex.cut, 0, 0);
     return c;
   }
 
+  // La foto completa (lo de fuera del recuadro se oscurece) y, dentro del
+  // recuadro, cómo queda la firma sobre la cuadrícula de transparencia.
   function paintUpload(){
-    var box = $('[data-extract]'), stage = $('[data-extract-stage]');
+    var box = $('[data-extract]'), stage = $('[data-extract-stage]'), crop = $('[data-extract-crop]');
     box.hidden = !ex;
     $('[data-studio-drop]').hidden = !!ex;
-    var old = stage.querySelector('canvas');
-    if(old) old.remove();
+    stage.querySelectorAll('canvas').forEach(function(n){ n.remove(); });
     if(!ex) return;
-    ex.out.setAttribute('aria-hidden', 'true');
-    ex.out.classList.add('extract__img');
-    stage.insertBefore(ex.out, stage.firstChild);
+    if(!ex.cut) key();
+    ex.src.setAttribute('aria-hidden', 'true');
+    ex.src.classList.add('extract__img');
+    stage.insertBefore(ex.src, stage.firstChild);
+    ex.cut.setAttribute('aria-hidden', 'true');
+    ex.cut.classList.add('extract__cut');
+    crop.insertBefore(ex.cut, crop.firstChild);
     stage.style.setProperty('--ar', ex.w / ex.h);
     $('[data-extract-sens]').hidden = !!ex.transparent;
+    $('[data-extract-ink]').hidden = !ex.ink;
+    if(ex.ink) $('[data-extract-ink-dot]').style.setProperty('--dot', 'rgb(' + ex.ink.rgb.map(Math.round).join(',') + ')');
     paintCrop();
   }
+
+  // Recalcula la firma del recuadro y la vuelve a mostrar.
+  function rekey(){ if(!ex) return; key(); paintUpload(); }
 
   function paintCrop(){
     var el = $('[data-extract-crop]'), cr = ex.crop;
@@ -447,6 +504,7 @@
   }
 
   // Mover el recuadro, cambiar su tamaño por las esquinas o dibujar uno nuevo.
+  var keyTimer = 0;
   function cropEvents(){
     var stage = $('[data-extract-stage]'), el = $('[data-extract-crop]'), MIN = 0.03;
     function fix(cr){
@@ -462,9 +520,11 @@
       var py = function(ev){ return Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height)); };
       var handle = e.target.dataset.h, inside = e.target.closest('[data-extract-crop]');
       var start = Object.assign({}, ex.crop), sx = px(e), sy = py(e);
-      var mode = handle ? 'resize' : inside ? 'move' : 'draw';
+      var mode = handle ? 'resize' : inside ? 'move' : 'draw', moved = false;
       stage.setPointerCapture(e.pointerId);
       function move(ev){
+        if(!moved && Math.abs(px(ev) - sx) * r.width < 4 && Math.abs(py(ev) - sy) * r.height < 4) return;
+        if(!moved){ moved = true; stage.classList.add('is-dragging'); }
         var x = px(ev), y = py(ev), cr;
         if(mode === 'move') cr = { x: start.x + x - sx, y: start.y + y - sy, w: start.w, h: start.h };
         else if(mode === 'draw') cr = { x: Math.min(sx, x), y: Math.min(sy, y), w: Math.abs(x - sx), h: Math.abs(y - sy) };
@@ -480,7 +540,15 @@
         stage.removeEventListener('pointermove', move);
         stage.removeEventListener('pointerup', up);
         stage.removeEventListener('pointercancel', up);
+        stage.classList.remove('is-dragging');
+        if(!moved){
+          // un toque dentro del recuadro (también en una esquina) elige el color de la tinta
+          var c = ex.crop;
+          if(sx >= c.x && sx <= c.x + c.w && sy >= c.y && sy <= c.y + c.h){ pickInk(sx, sy); rekey(); }
+          return;
+        }
         if(mode === 'draw' && (ex.crop.w <= MIN || ex.crop.h <= MIN)){ ex.crop = start; paintCrop(); }
+        rekey();
       }
       stage.addEventListener('pointermove', move);
       stage.addEventListener('pointerup', up);
@@ -495,6 +563,7 @@
       var dx = k === 'ArrowLeft' ? -st : k === 'ArrowRight' ? st : 0, dy = k === 'ArrowUp' ? -st : k === 'ArrowDown' ? st : 0;
       if(e.shiftKey){ cr.w += dx; cr.h += dy; } else { cr.x += dx; cr.y += dy; }
       ex.crop = fix(cr); paintCrop();
+      clearTimeout(keyTimer); keyTimer = setTimeout(rekey, 180);
     });
   }
 

@@ -72,6 +72,7 @@ async function pngDesdeRGB(rgb, w, h){
 // Imagen dibujada en el navegador (JPG o PNG). dibujo: 'documento' (tarjeta sobre una mesa),
 // 'carne-vertical' (carné de pie), 'firma' (trazo azul sobre papel), 'firma-transparente',
 // 'foto-firma' (foto de una hoja firmada: luz dispareja, sombra, texto impreso arriba y polvo),
+// 'foto-cedula' (cédula sobre una mesa, con fondo de seguridad de colores y la firma encima),
 // 'retrato' (cara sobre fondo claro) o 'liso'.
 async function imagen(page, { ancho = 1200, alto = 900, dibujo = 'liso', tipo = 'image/jpeg' } = {}){
   const datos = await page.evaluate(async ({ ancho, alto, dibujo, tipo }) => {
@@ -116,6 +117,33 @@ async function imagen(page, { ancho = 1200, alto = 900, dibujo = 'liso', tipo = 
       // polvo y grano
       x.fillStyle = '#6a655c';
       for(let i = 0; i < 160; i++){ const px = (i * 7919 % 997) / 997 * ancho, py = (i * 104729 % 991) / 991 * alto; x.fillRect(px, py, 2, 2); }
+    }else if(dibujo === 'foto-cedula'){
+      x.fillStyle = '#7a5a43'; x.fillRect(0, 0, ancho, alto);                  // mesa
+      const l = ancho * 0.1, t = alto * 0.15, w = ancho * 0.8, h = w / 1.585; // la cédula
+      const g = x.createLinearGradient(l, t, l + w, t + h);
+      g.addColorStop(0, '#f6e7c8'); g.addColorStop(0.5, '#e4eedb'); g.addColorStop(1, '#f2d9e2');
+      x.fillStyle = g; x.fillRect(l, t, w, h);
+      // fondo de seguridad: líneas onduladas de colores por toda la tarjeta
+      x.save(); x.beginPath(); x.rect(l, t, w, h); x.clip();
+      const tonos = ['#d98aa8', '#8fbf8a', '#8aa8d9', '#d9b36a'];
+      for(let k = 0; k < 46; k++){
+        x.strokeStyle = tonos[k % 4]; x.lineWidth = Math.max(1.5, ancho / 700);
+        x.beginPath();
+        for(let px = 0; px <= w; px += 6){
+          const py = t + (k / 45) * h + Math.sin(px / 38 + k * 0.7) * h * 0.035;
+          px ? x.lineTo(l + px, py) : x.moveTo(l, py);
+        }
+        x.stroke();
+      }
+      x.restore();
+      x.fillStyle = '#9aa0b0'; x.fillRect(l + w * 0.05, t + h * 0.15, w * 0.25, h * 0.6);  // foto
+      x.fillStyle = '#22252e'; for(let i = 0; i < 4; i++) x.fillRect(l + w * 0.36, t + h * (0.12 + i * 0.09), w * 0.45, h * 0.035); // datos
+      // la firma, negra, encima del fondo de colores
+      x.strokeStyle = '#15171c'; x.lineWidth = Math.max(3, ancho / 260); x.lineCap = 'round';
+      x.beginPath(); x.moveTo(l + w * 0.4, t + h * 0.86);
+      x.bezierCurveTo(l + w * 0.48, t + h * 0.6, l + w * 0.55, t + h * 0.95, l + w * 0.62, t + h * 0.72);
+      x.bezierCurveTo(l + w * 0.68, t + h * 0.6, l + w * 0.74, t + h * 0.9, l + w * 0.82, t + h * 0.68);
+      x.stroke();
     }else if(dibujo === 'retrato'){
       x.fillStyle = '#eef1f6'; x.fillRect(0, 0, ancho, alto);
       x.fillStyle = '#c99b7a'; x.beginPath(); x.ellipse(ancho / 2, alto * 0.4, ancho * 0.16, alto * 0.16, 0, 0, Math.PI * 2); x.fill();

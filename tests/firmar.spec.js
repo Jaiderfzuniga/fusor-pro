@@ -386,3 +386,61 @@ test('copiar una firma en las páginas elegidas, duplicarla y Ctrl+C / Ctrl+V', 
   expect(imagenesPorPagina(await leerPdf(bytes))).toEqual([2, 1, 1, 1, 1]); // la página 1 lleva el original y su duplicado
   expect(errores).toEqual([]);
 });
+
+test('sacar la firma de una foto de la cédula: borra el fondo de colores y deja solo la firma', async ({ page }) => {
+  const errores = await abrir(page, 'firmar');
+  await page.click('[data-sign-extract]');
+  const foto = await imagen(page, { ancho: 1600, alto: 1200, dibujo: 'foto-cedula' });
+  await page.setInputFiles('[data-studio-drop] input[type=file]:not([capture])', archivo('cedula.jpg', 'image/jpeg', foto));
+  await expect(page.locator('[data-extract]')).toBeVisible();
+
+  // el recuadro automático va a la firma (abajo a la derecha), no a la tarjeta ni a los datos impresos
+  const recuadro = () => page.evaluate(() => {
+    const s = getComputedStyle(document.querySelector('[data-extract-crop]'));
+    const [x, y, w, h] = ['--cx', '--cy', '--cw', '--ch'].map(k => +s.getPropertyValue(k));
+    return { x, y, w, h };
+  });
+  const r = await recuadro();
+  expect(r.x).toBeGreaterThan(0.38); expect(r.x + r.w).toBeLessThan(0.8);
+  expect(r.y).toBeGreaterThan(0.5); expect(r.y + r.h).toBeLessThan(0.8);
+
+  // tocar un trazo fija el color de la tinta; «Elegir sola» lo deshace
+  const st = await page.locator('[data-extract-stage]').boundingBox();
+  await page.mouse.click(st.x + st.width * 0.511, st.y + st.height * 0.674); // mitad del primer arco de la firma
+  await expect(page.locator('[data-extract-ink]')).toBeVisible();
+  const tinta = await page.locator('[data-extract-ink-dot]').evaluate(e => e.style.getPropertyValue('--dot').match(/\d+/g).map(Number));
+  expect(tinta[0] + tinta[1] + tinta[2]).toBeLessThan(250);                 // tomó el negro de la firma
+  await page.click('[data-extract-ink-reset]');
+  await expect(page.locator('[data-extract-ink]')).toBeHidden();
+
+  await page.click('[data-studio-use]');
+  await expect(page.locator('.sig')).toHaveCount(1);
+  // la firma sola: un único trazo, sin restos de las líneas de colores ni esquinas con fondo
+  const info = await page.locator('.sig img').first().evaluate(async img => {
+    await img.decode();
+    const c = document.createElement('canvas'), w = c.width = img.naturalWidth, h = c.height = img.naturalHeight;
+    const x = c.getContext('2d'); x.drawImage(img, 0, 0);
+    const d = x.getImageData(0, 0, w, h).data, seen = new Uint8Array(w * h);
+    let partes = 0, tinta = 0;
+    for(let i = 0; i < w * h; i++){
+      if(d[i * 4 + 3] < 128) continue;
+      tinta++;
+      if(seen[i]) continue;
+      partes++; const pila = [i]; seen[i] = 1;
+      while(pila.length){
+        const p = pila.pop(), px = p % w;
+        for(const q of [p - 1, p + 1, p - w, p + w]){
+          if(q < 0 || q >= w * h || seen[q] || d[q * 4 + 3] < 128) continue;
+          if((q === p - 1 && px === 0) || (q === p + 1 && px === w - 1)) continue;
+          seen[q] = 1; pila.push(q);
+        }
+      }
+    }
+    return { partes, tinta: tinta / (w * h), w, h, esquinas: [0, w - 1, (h - 1) * w, h * w - 1].map(p => d[p * 4 + 3]) };
+  });
+  expect(info.partes).toBeLessThanOrEqual(2);
+  expect(info.tinta).toBeLessThan(0.2);
+  expect(info.w).toBeGreaterThan(info.h * 2);
+  expect(info.esquinas.every(a => a < 40)).toBe(true);
+  expect(errores).toEqual([]);
+});

@@ -912,7 +912,7 @@
       <div class="drop drop--small is-compact" data-studio-drop data-camera="environment" tabindex="0" role="button" aria-label="Elegir una foto o escaneo con tu firma">
         <svg class="icon icon--lg"><use href="#i-image"/></svg>
         <p class="drop__title">Foto o escaneo de tu firma</p>
-        <p class="drop__sub">Firma en papel, una hoja ya firmada o un pantallazo: se quita el fondo y se recorta sola. JPG o PNG.</p>
+        <p class="drop__sub">Firma en papel, una hoja firmada, la cédula o un carné: se quita el fondo y queda solo la firma. JPG o PNG.</p>
         <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" hidden />
       </div>
       <div class="extract" data-extract hidden>
@@ -926,7 +926,8 @@
             </div>
           </div>
         </div>
-        <p class="field__help">Deja solo la firma dentro del recuadro: arrástralo, estíralo por las esquinas o dibuja uno nuevo sobre la foto.</p>
+        <p class="field__help">Deja solo la firma dentro del recuadro: arrástralo, estíralo por las esquinas o dibuja uno nuevo sobre la foto. Si queda algo del fondo (por ejemplo, en una cédula), toca un trazo de la firma para indicar el color de la tinta.</p>
+        <p class="extract__ink" data-extract-ink hidden><span class="extract__dot" data-extract-ink-dot aria-hidden="true"></span>Tinta elegida tocando la firma. <button class="link-btn" type="button" data-extract-ink-reset>Elegir sola</button></p>
         <div class="studio__row">
           <label class="studio__range" data-extract-sens><span>Sensibilidad</span><input id="studioSens" type="range" min="1" max="10" step="1" value="5" aria-describedby="studioSensHelp" /></label>
           <span class="visually-hidden" id="studioSensHelp">Más sensibilidad toma los trazos claros; menos quita sombras y manchas.</span>
